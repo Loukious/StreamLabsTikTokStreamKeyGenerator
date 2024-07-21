@@ -326,6 +326,9 @@ save_config_button.grid(row=2, column=0, padx=10, pady=10, columnspan=2, sticky=
 help_button = tk.Button(root, text="Help", command=show_help)
 help_button.grid(row=3, column=0, padx=10, pady=10, columnspan=2, sticky='ew')
 
+open_live_monitor_button = tk.Button(root, text="Open Live Monitor", command=lambda: webbrowser.open("https://livecenter.tiktok.com/live_monitor?lang=en-US"))
+open_live_monitor_button.grid(row=4, column=0, padx=10, pady=10, columnspan=2, sticky='ew')
+
 # Configure the grid weights for proper resizing behavior
 root.grid_columnconfigure(0, weight=1)
 root.grid_columnconfigure(1, weight=1)
