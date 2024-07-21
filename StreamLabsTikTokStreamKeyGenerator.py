@@ -15,6 +15,8 @@ class Stream:
         })
 
     def search(self, game):
+        if not game:
+            return []
         url = f"https://streamlabs.com/api/v5/slobs/tiktok/info?category={game}"
         info = self.s.get(url).json()
         return info["categories"]
