@@ -15,6 +15,9 @@ This application is a simple tool that generates a TikTok Live Stream Key for OB
 - TikTok account
 - Streamlabs installed on your computer and you are logged in with your TikTok account in Streamlabs
 
+## Download
+- Download the latest release from [here](https://github.com/Loukious/StreamLabsTikTokStreamKeyGenerator/releases/latest)
+
 ## Output
 
 The script will output:
