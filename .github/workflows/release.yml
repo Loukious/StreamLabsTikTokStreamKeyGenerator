@@ -23,17 +23,24 @@ jobs:
         if (Test-Path requirements.txt) {
           pip install -r requirements.txt
         }
-    - name: Build Executable
+    - name: Build Normal Executable (without console)
+      run: pyinstaller --onefile --clean -w StreamLabsTikTokStreamKeyGenerator.py
+    - name: Rename Normal Executable
+      run: Rename-Item -Path dist/StreamLabsTikTokStreamKeyGenerator.exe -NewName StreamLabsTikTokStreamKeyGeneratorRelease.exe
+    - name: Build Debug Executable (with console)
       run: pyinstaller --onefile --clean StreamLabsTikTokStreamKeyGenerator.py
+    - name: Rename Debug Executable
+      run: Rename-Item -Path dist/StreamLabsTikTokStreamKeyGenerator.exe -NewName StreamLabsTikTokStreamKeyGeneratorDebug.exe
     - name: Clean up obsolete files
       run: Remove-Item -Path build, StreamLabsTikTokStreamKeyGenerator.spec -Recurse -Force
     
-    - name: Upload artifact
+    - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
         name: windows
         path: |
-          dist/StreamLabsTikTokStreamKeyGenerator.exe
+          dist/StreamLabsTikTokStreamKeyGeneratorRelease.exe
+          dist/StreamLabsTikTokStreamKeyGeneratorDebug.exe
 
   release:
     runs-on: windows-latest
@@ -53,4 +60,5 @@ jobs:
           prerelease: false
           draft: false
           files: |
-            windows/StreamLabsTikTokStreamKeyGenerator.exe
+            windows/StreamLabsTikTokStreamKeyGeneratorRelease.exe
+            windows/StreamLabsTikTokStreamKeyGeneratorDebug.exe
