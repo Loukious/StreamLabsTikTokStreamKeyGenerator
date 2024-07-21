@@ -18,6 +18,10 @@ This application is a simple tool that generates a TikTok Live Stream Key for OB
 ## Download
 - Download the latest release from [here](https://github.com/Loukious/StreamLabsTikTokStreamKeyGenerator/releases/latest)
 
+## Screenshots
+
+![Screenshot](https://i.imgur.com/XLroKB2.png)
+
 ## Output
 
 The script will output:
