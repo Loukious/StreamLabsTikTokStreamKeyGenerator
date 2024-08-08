@@ -83,10 +83,17 @@ def load_token():
     import os
     import re
     import glob
+    import platform
 
-    # Define the directory pattern
-    path_pattern = os.path.expandvars(r'%appdata%\slobs-client\Local Storage\leveldb\*.log')
-    
+    # Determine the correct path based on the operating system
+    if platform.system() == 'Windows':
+        path_pattern = os.path.expandvars(r'%appdata%\slobs-client\Local Storage\leveldb\*.log')
+    elif platform.system() == 'Darwin':  # macOS
+        path_pattern = os.path.expanduser('~/Library/Application Support/slobs-client/Local Storage/leveldb/*.log')
+    else:
+        messagebox.showinfo("Unsupported OS", "This script supports only Windows and macOS.")
+        return None
+
     # Get all files matching the pattern
     files = glob.glob(path_pattern)
     
