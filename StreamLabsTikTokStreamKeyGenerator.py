@@ -19,6 +19,7 @@ class Stream:
             return []
         url = f"https://streamlabs.com/api/v5/slobs/tiktok/info?category={game}"
         info = self.s.get(url).json()
+        info["categories"].append({"full_name": "Other", "game_mask_id": ""})
         return info["categories"]
 
     def start(self, title, category):
