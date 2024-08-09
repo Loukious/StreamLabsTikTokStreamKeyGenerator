@@ -24,11 +24,11 @@ jobs:
           pip install -r requirements.txt
         }
     - name: Build Normal Executable (without console)
-      run: pyinstaller --onefile --clean -w StreamLabsTikTokStreamKeyGenerator.py
+      run: pyinstaller --onefile --clean -w --add-data "ca.crt;seleniumwire" --add-data "ca.key;seleniumwire" StreamLabsTikTokStreamKeyGenerator.py
     - name: Rename Normal Executable
       run: Rename-Item -Path dist/StreamLabsTikTokStreamKeyGenerator.exe -NewName StreamLabsTikTokStreamKeyGeneratorRelease.exe
     - name: Build Debug Executable (with console)
-      run: pyinstaller --onefile --clean StreamLabsTikTokStreamKeyGenerator.py
+      run: pyinstaller --onefile --clean --add-data "ca.crt;seleniumwire" --add-data "ca.key;seleniumwire" StreamLabsTikTokStreamKeyGenerator.py
     - name: Rename Debug Executable
       run: Rename-Item -Path dist/StreamLabsTikTokStreamKeyGenerator.exe -NewName StreamLabsTikTokStreamKeyGeneratorDebug.exe
     - name: Clean up obsolete files
@@ -57,7 +57,7 @@ jobs:
         pip install pytest pyinstaller
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Build Normal Executable (without console)
-      run: pyinstaller --onefile --clean -w StreamLabsTikTokStreamKeyGenerator.py
+      run: pyinstaller --onefile --clean -w --add-data "ca.crt:seleniumwire" --add-data "ca.key:seleniumwire" StreamLabsTikTokStreamKeyGenerator.py
     - name: Create .app Bundle
       run: |
         mkdir -p StreamLabsTikTokStreamKeyGenerator.app/Contents/MacOS
@@ -65,7 +65,7 @@ jobs:
     - name: Zip Normal Executable
       run: zip -r dist/StreamLabsTikTokStreamKeyGeneratorRelease.MacOS.zip StreamLabsTikTokStreamKeyGenerator.app
     - name: Build Debug Executable (with console)
-      run: pyinstaller --onefile --clean StreamLabsTikTokStreamKeyGenerator.py
+      run: pyinstaller --onefile --clean --add-data "ca.crt:seleniumwire" --add-data "ca.key:seleniumwire" StreamLabsTikTokStreamKeyGenerator.py
     - name: Create .app Bundle for Debug
       run: |
         mkdir -p StreamLabsTikTokStreamKeyGenerator.app/Contents/MacOS

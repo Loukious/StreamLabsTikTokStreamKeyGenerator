@@ -139,6 +139,12 @@ def toggle_token_visibility():
         token_entry.config(show='')
         toggle_button.config(text='Hide Token')
 
+def on_token_entry_change(*args):
+    if token_entry.get():  # Check if the token_entry has any text
+        go_live_button.config(state=tk.NORMAL)  # Enable the Go Live button
+    else:
+        go_live_button.config(state=tk.DISABLED)  # Disable the Go Live button if empty
+
 def go_live():
     game_mask_id = getattr(game_category_entry, 'game_mask_id', "")
 
@@ -257,8 +263,12 @@ load_button = tk.Button(token_frame, text="Load token", command=populate_token)
 load_button.pack(pady=5)
 
 # Create a text entry to display the token, initially hidden
-token_entry = tk.Entry(token_frame, width=50, show='*', justify='center')
+token_var = tk.StringVar()
+token_entry = tk.Entry(token_frame, width=50, textvariable=token_var, show='*', justify='center')
 token_entry.pack(pady=5)
+
+# Bind the StringVar to the on_token_entry_change function
+token_var.trace_add("write", on_token_entry_change)
 
 # Create a button to toggle token visibility
 toggle_button = tk.Button(token_frame, text="Show Token", command=toggle_token_visibility)
