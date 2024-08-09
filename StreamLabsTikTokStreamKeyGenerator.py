@@ -3,59 +3,37 @@ import threading
 import tkinter as tk
 from tkinter import messagebox
 import webbrowser
-import requests
+from Stream import Stream
+from TokenRetriever import TokenRetriever
 
-
-class Stream:
-    def __init__(self, token):
-        self.s = requests.session()
-        self.s.headers.update({
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) StreamlabsDesktop/1.16.7 Chrome/114.0.5735.289 Electron/25.9.3 Safari/537.36",
-            "authorization": f"Bearer {token}"
-        })
-
-    def search(self, game):
-        if not game:
-            return []
-        url = f"https://streamlabs.com/api/v5/slobs/tiktok/info?category={game}"
-        info = self.s.get(url).json()
-        info["categories"].append({"full_name": "Other", "game_mask_id": ""})
-        return info["categories"]
-
-    def start(self, title, category):
-        url = "https://streamlabs.com/api/v5/slobs/tiktok/stream/start"
-        files=(
-            ('title', (None, title)),
-            ('device_platform', (None, 'win32')),
-            ('category', (None, category)),
-        )
-        response = self.s.post(url, files=files).json()
-        try:
-            self.id = response["id"]
-            return response["rtmp"], response["key"]
-        except KeyError:
-            return None, None
-
-    def end(self):
-        url = f"https://streamlabs.com/api/v5/slobs/tiktok/stream/{self.id}/end"
-        response = self.s.post(url).json()
-        return response["success"]
 
 def load_config():
     """Load entry values from a JSON file."""
     try:
         with open("config.json", "r") as file:
             data = json.load(file)
+            
+        token_entry.delete(0, tk.END)
+        token_entry.insert(0, data.get("token", ""))
 
         stream_title_entry.config(state=tk.NORMAL)
         stream_title_entry.delete(0, tk.END)
         stream_title_entry.insert(0, data.get("title", ""))
-        stream_title_entry.config(state=tk.DISABLED)
+
 
         game_category_entry.config(state=tk.NORMAL)
         game_category_entry.delete(0, tk.END)
         game_category_entry.insert(0, data.get("game", ""))
-        game_category_entry.config(state=tk.DISABLED)
+
+
+        if token_entry.get():
+            global stream
+            stream = Stream(token_entry.get())
+            go_live_button.config(state=tk.NORMAL)
+        else:
+            stream_title_entry.config(state=tk.DISABLED)
+            game_category_entry.config(state=tk.DISABLED)
+            
 
         if stream:
             fetch_game_mask_id(data.get("game", ""))
@@ -75,7 +53,8 @@ def save_config():
     """Save entry values to a JSON file."""
     data = {
         "title": stream_title_entry.get(),
-        "game": game_category_entry.get()
+        "game": game_category_entry.get(),
+        "token": token_entry.get()
     }
     with open("config.json", "w") as file:
         json.dump(data, file)
@@ -117,13 +96,31 @@ def load_token():
         except Exception as e:
             messagebox.showerror("Error", f"Error reading file {file}: {e}")
     
-    messagebox.showinfo("API Token", "No API Token found. Make sure you have logged into Streamlabs with your TikTok account.")
+    messagebox.showinfo("API Token", "No API Token found locally. A webpage will now open to allow you to login into your TikTok account.")
     return None
+
+def fetch_online_token():
+    retriever = TokenRetriever()
+    token = retriever.retrieve_token()
+    if token:
+        token_entry.delete(0, tk.END)
+        token_entry.insert(0, token)
+        token_entry.config(show='*')
+        global stream
+        stream = Stream(token)
+        stream_title_entry.config(state=tk.NORMAL)
+        game_category_entry.config(state=tk.NORMAL)
+        go_live_button.config(state=tk.NORMAL)
+        fetch_game_mask_id(game_category_entry.get())
+    else:
+        messagebox.showerror("Error", "Failed to obtain token online.")
 
 def populate_token():
     global stream
     token = load_token()
-    if token:
+    if not token:
+        fetch_online_token()  # If no local token, try fetching online
+    else:
         token_entry.delete(0, tk.END)
         token_entry.insert(0, token)
         token_entry.config(show='*')
@@ -143,10 +140,7 @@ def toggle_token_visibility():
         toggle_button.config(text='Hide Token')
 
 def go_live():
-    game_mask_id = getattr(game_category_entry, 'game_mask_id', None)
-    if not game_mask_id:
-        messagebox.showerror("Error", "Game category is invalid or not selected.")
-        return
+    game_mask_id = getattr(game_category_entry, 'game_mask_id', "")
 
     stream_url, stream_key = stream.start(stream_title_entry.get(), game_mask_id)
 
@@ -351,5 +345,4 @@ root.grid_rowconfigure(3, weight=1)
 if __name__ == "__main__":
     stream = None
     load_config()
-    populate_token()
     root.mainloop()

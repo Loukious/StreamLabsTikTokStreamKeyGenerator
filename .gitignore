@@ -6,3 +6,5 @@ dist/*
 */__pycache__/*
 .env
 __pycache__/*
+cookies.json
+.venv/*
