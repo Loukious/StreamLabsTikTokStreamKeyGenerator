@@ -41,7 +41,14 @@ class TokenRetriever:
                 driver.add_cookie(cookie)
 
     def retrieve_token(self):
-        self.driver = uc.Chrome()
+        chrome_options = uc.ChromeOptions()
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--ignore-certificate-errors")  # Ignore SSL certificate errors
+        chrome_options.add_argument("--disable-web-security")  # Disable web security
+        chrome_options.add_argument("--allow-running-insecure-content")  # Allow insecure content
+
+        self.driver = uc.Chrome(options=chrome_options)
         self.driver.get("https://www.tiktok.com")  # Load a page first before setting cookies
         self.load_cookies(self.driver)
         self.driver.get(self.streamlabs_auth_url)
