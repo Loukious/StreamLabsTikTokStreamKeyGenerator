@@ -71,7 +71,6 @@ def load_token():
     elif platform.system() == 'Darwin':  # macOS
         path_pattern = os.path.expanduser('~/Library/Application Support/slobs-client/Local Storage/leveldb/*.log')
     else:
-        messagebox.showinfo("Unsupported OS", "This script supports only Windows and macOS.")
         return None
 
     # Get all files matching the pattern
