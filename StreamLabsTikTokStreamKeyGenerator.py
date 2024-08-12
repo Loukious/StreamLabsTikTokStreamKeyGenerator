@@ -19,21 +19,21 @@ def load_config():
         stream_title_entry.config(state=tk.NORMAL)
         stream_title_entry.delete(0, tk.END)
         stream_title_entry.insert(0, data.get("title", ""))
+        stream_title_entry.config(state=tk.DISABLED)
 
 
         game_category_entry.config(state=tk.NORMAL)
         game_category_entry.delete(0, tk.END)
         game_category_entry.insert(0, data.get("game", ""))
+        game_category_entry.config(state=tk.DISABLED)
 
 
         if token_entry.get():
             global stream
             stream = Stream(token_entry.get())
             go_live_button.config(state=tk.NORMAL)
-        else:
-            stream_title_entry.config(state=tk.DISABLED)
-            game_category_entry.config(state=tk.DISABLED)
-            
+            stream_title_entry.config(state=tk.NORMAL)
+            game_category_entry.config(state=tk.NORMAL)
 
         if stream:
             fetch_game_mask_id(data.get("game", ""))
@@ -283,7 +283,7 @@ stream_title_label = tk.Label(stream_frame, text="Stream Title:")
 stream_title_label.pack(pady=5)
 
 # Create a text entry for stream title
-stream_title_entry = tk.Entry(stream_frame, width=50)
+stream_title_entry = tk.Entry(stream_frame, width=50, state=tk.DISABLED)
 stream_title_entry.pack(pady=5)
 
 # Create a label for game category
@@ -291,7 +291,7 @@ game_category_label = tk.Label(stream_frame, text="Game:")
 game_category_label.pack(pady=5)
 
 # Create a text entry for game category
-game_category_entry = tk.Entry(stream_frame, width=50)
+game_category_entry = tk.Entry(stream_frame, width=50, state=tk.DISABLED)
 game_category_entry.pack(pady=5)
 
 # Bind the key release event for auto-complete
