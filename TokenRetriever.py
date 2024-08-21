@@ -41,14 +41,23 @@ class TokenRetriever:
                 driver.add_cookie(cookie)
 
     def retrieve_token(self):
-        chrome_options = uc.ChromeOptions()
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--ignore-certificate-errors")  # Ignore SSL certificate errors
-        chrome_options.add_argument("--disable-web-security")  # Disable web security
-        chrome_options.add_argument("--allow-running-insecure-content")  # Allow insecure content
+        # Set up a directory for Selenium Wire to store its files
+        selenium_wire_storage = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seleniumwire")
 
-        self.driver = uc.Chrome(options=chrome_options)
+        # Ensure the directory exists
+        if not os.path.exists(selenium_wire_storage):
+            os.makedirs(selenium_wire_storage)
+
+        # Configure Selenium Wire options
+        seleniumwire_options = {
+            'request_storage_base_dir': selenium_wire_storage
+        }
+        chrome_options = uc.ChromeOptions()
+        chrome_options.add_argument('--ignore-ssl-errors=yes')
+        chrome_options.add_argument('--ignore-certificate-errors')
+
+        # Now configure the webdriver with Selenium Wire options
+        self.driver = uc.Chrome(seleniumwire_options=seleniumwire_options, options=chrome_options)
         self.driver.get("https://www.tiktok.com")  # Load a page first before setting cookies
         self.load_cookies(self.driver)
         self.driver.get(self.streamlabs_auth_url)

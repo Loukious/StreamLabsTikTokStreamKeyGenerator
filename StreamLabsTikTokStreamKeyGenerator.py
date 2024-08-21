@@ -10,7 +10,7 @@ from TokenRetriever import TokenRetriever
 def load_config():
     """Load entry values from a JSON file."""
     try:
-        with open("config.json", "r") as file:
+        with open("config.json", "r+") as file:
             data = json.load(file)
             
         token_entry.delete(0, tk.END)
@@ -38,7 +38,7 @@ def load_config():
         if stream:
             fetch_game_mask_id(data.get("game", ""))
 
-    except FileNotFoundError:
+    except:
         print("Error loading config file.")
 
 def fetch_game_mask_id(game_name):
