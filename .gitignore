@@ -2,7 +2,6 @@ config.json
 *.spec
 build/*
 dist/*
-*.pem
 */__pycache__/*
 .env
 __pycache__/*
