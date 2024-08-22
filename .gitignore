@@ -7,3 +7,6 @@ dist/*
 __pycache__/*
 cookies.json
 .venv/*
+StreamLabsTikTokStreamKeyGenerator.dist/*
+*.xml
+*.exe

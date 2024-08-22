@@ -1,6 +1,4 @@
 requests>=2.31.0
-pyinstaller>=6.6.0
-setuptools>=69.5.1
 selenium-wire>=5.1.0
 undetected_chromedriver>=3.5.5
 blinker==1.7.0
