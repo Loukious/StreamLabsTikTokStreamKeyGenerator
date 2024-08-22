@@ -1,4 +1,5 @@
 import json
+import multiprocessing
 import threading
 import tkinter as tk
 from tkinter import messagebox
@@ -352,6 +353,7 @@ root.grid_rowconfigure(3, weight=1)
 
 # Start the Tkinter event loop
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     stream = None
     load_config()
     root.mainloop()
