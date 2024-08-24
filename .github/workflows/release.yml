@@ -101,7 +101,7 @@ jobs:
     - name: Build Executable
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        arch -${{ matrix.architecture }} nuitka --windows-console-mode=disable --assume-yes-for-downloads --standalone --macos-create-app-bundle --onefile --follow-imports --enable-plugin=tk-inter --include-data-file=.seleniumwire/seleniumwire-ca.pem=seleniumwire/.seleniumwire/seleniumwire-ca.pem --include-data-file=.seleniumwire/seleniumwire-dhparam.pem=seleniumwire/.seleniumwire/seleniumwire-dhparam.pem StreamLabsTikTokStreamKeyGenerator.py
+        arch -${{ matrix.architecture }} nuitka --windows-console-mode=disable --assume-yes-for-downloads --standalone --macos-create-app-bundle --macos-target-arch=${{ matrix.architecture }} --onefile --follow-imports --enable-plugin=tk-inter --include-data-file=.seleniumwire/seleniumwire-ca.pem=seleniumwire/.seleniumwire/seleniumwire-ca.pem --include-data-file=.seleniumwire/seleniumwire-dhparam.pem=seleniumwire/.seleniumwire/seleniumwire-dhparam.pem StreamLabsTikTokStreamKeyGenerator.py
 
     - name: Rename Executable
       run: mv StreamLabsTikTokStreamKeyGenerator.app StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-${{ matrix.architecture }}.app
