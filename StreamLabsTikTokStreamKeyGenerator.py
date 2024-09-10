@@ -35,12 +35,49 @@ def load_config():
             go_live_button.config(state=tk.NORMAL)
             stream_title_entry.config(state=tk.NORMAL)
             game_category_entry.config(state=tk.NORMAL)
+            load_account_info()
 
         if stream:
             fetch_game_mask_id(data.get("game", ""))
 
     except:
         print("Error loading config file. Ignore this if it's the first time running the program or you never saved the config file before.")
+
+
+def load_account_info():
+    if stream:
+        info = stream.getInfo()
+        if "user" in info and "username" in info["user"]:
+            tiktok_username_entry.config(state=tk.NORMAL)
+            tiktok_username_entry.delete(0, tk.END)
+            tiktok_username_entry.insert(0, info["user"]["username"])
+            tiktok_username_entry.config(state=tk.DISABLED)
+        else:
+            tiktok_username_entry.config(state=tk.NORMAL)
+            tiktok_username_entry.delete(0, tk.END)
+            tiktok_username_entry.insert(0, "Unknown")
+            tiktok_username_entry.config(state=tk.DISABLED)
+        if "application_status" in info and "status" in info["application_status"]:
+            streamlabs_app_status_entry.config(state=tk.NORMAL)
+            streamlabs_app_status_entry.delete(0, tk.END)
+            streamlabs_app_status_entry.insert(0, info["application_status"]["status"])
+            streamlabs_app_status_entry.config(state=tk.DISABLED)
+        else:
+            streamlabs_app_status_entry.config(state=tk.NORMAL)
+            streamlabs_app_status_entry.delete(0, tk.END)
+            streamlabs_app_status_entry.insert(0, "Unknown")
+            streamlabs_app_status_entry.config(state=tk.DISABLED)
+        if "can_be_live" in info:
+            can_go_live_entry.config(state=tk.NORMAL)
+            can_go_live_entry.delete(0, tk.END)
+            can_go_live_entry.insert(0, str(info["can_be_live"]))
+            can_go_live_entry.config(state=tk.DISABLED)
+        else:
+            can_go_live_entry.config(state=tk.NORMAL)
+            can_go_live_entry.delete(0, tk.END)
+            can_go_live_entry.insert(0, "Unknown")
+            can_go_live_entry.config(state=tk.DISABLED)
+
 
 def fetch_game_mask_id(game_name):
     categories = stream.search(game_name)
@@ -125,6 +162,7 @@ def populate_token():
         token_entry.insert(0, token)
         token_entry.config(show='*')
         stream = Stream(token)
+        load_account_info()
         stream_title_entry.config(state=tk.NORMAL)
         game_category_entry.config(state=tk.NORMAL)
         go_live_button.config(state=tk.NORMAL)
@@ -273,6 +311,30 @@ token_var.trace_add("write", on_token_entry_change)
 # Create a button to toggle token visibility
 toggle_button = tk.Button(token_frame, text="Show Token", command=toggle_token_visibility)
 toggle_button.pack(pady=5)
+
+# Tiktok Username
+tiktok_username_label = tk.Label(token_frame, text="TikTok Username:")
+tiktok_username_label.pack(pady=5)
+
+tiktok_username_var = tk.StringVar()
+tiktok_username_entry = tk.Entry(token_frame, textvariable=tiktok_username_var, width=50, state=tk.DISABLED)
+tiktok_username_entry.pack(pady=5)
+
+# StreamLabs application status
+streamlabs_app_status_label = tk.Label(token_frame, text="StreamLabs Application Status:")
+streamlabs_app_status_label.pack(pady=5)
+
+streamlabs_app_status_var = tk.StringVar()
+streamlabs_app_status_entry = tk.Entry(token_frame, textvariable=streamlabs_app_status_var, width=50, state=tk.DISABLED)
+streamlabs_app_status_entry.pack(pady=5)
+
+# Can go live?
+can_go_live_label = tk.Label(token_frame, text="Can Go Live:")
+can_go_live_label.pack(pady=5)
+
+can_go_live_var = tk.StringVar()
+can_go_live_entry = tk.Entry(token_frame, textvariable=can_go_live_var, width=50, state=tk.DISABLED)
+can_go_live_entry.pack(pady=5)
 
 # Create a LabelFrame for stream details
 stream_frame = tk.LabelFrame(root, text="Stream Details")

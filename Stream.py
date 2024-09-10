@@ -35,3 +35,8 @@ class Stream:
         url = f"https://streamlabs.com/api/v5/slobs/tiktok/stream/{self.id}/end"
         response = self.s.post(url).json()
         return response["success"]
+    
+    def getInfo(self):
+        url = "https://streamlabs.com/api/v5/slobs/tiktok/info"
+        response = self.s.get(url).json()
+        return response
