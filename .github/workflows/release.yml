@@ -58,22 +58,20 @@ jobs:
         }
 
     - name: Rename Executable
-      run: Rename-Item -Path StreamLabsTikTokStreamKeyGenerator.exe -NewName StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}.exe
+      run: Rename-Item -Path StreamLabsTikTokStreamKeyGenerator.exe -NewName StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-win.exe
 
     - name: Compress Executable
-      run: Compress-Archive -Path StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}.exe -DestinationPath StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}.zip
+      run: Compress-Archive -Path StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-win.exe -DestinationPath StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-win.zip
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: windows
+        name: windows-${{ matrix.build_type }}
         path: |
-          ./StreamLabsTikTokStreamKeyGeneratorRelease.zip
-          ./StreamLabsTikTokStreamKeyGeneratorDebug.zip
+          ./StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-win.zip
 
   build_macos:
     runs-on: macos-latest
-
     strategy:
       matrix:
         architecture: [x86_64, arm64]
@@ -103,55 +101,102 @@ jobs:
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         arch -${{ matrix.architecture }} nuitka --windows-console-mode=disable --assume-yes-for-downloads --standalone --macos-create-app-bundle --macos-target-arch=${{ matrix.architecture }} --onefile --follow-imports --enable-plugin=tk-inter --include-data-file=.seleniumwire/seleniumwire-ca.pem=seleniumwire/.seleniumwire/seleniumwire-ca.pem --include-data-file=.seleniumwire/seleniumwire-dhparam.pem=seleniumwire/.seleniumwire/seleniumwire-dhparam.pem StreamLabsTikTokStreamKeyGenerator.py
 
+    - name: Remove quarantine attribute
+      run: xattr -dr com.apple.quarantine StreamLabsTikTokStreamKeyGenerator.app
+
     - name: Rename Executable
-      run: mv StreamLabsTikTokStreamKeyGenerator.app StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-${{ matrix.architecture }}.app
+      run: mv StreamLabsTikTokStreamKeyGenerator.app StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-${{ matrix.architecture }}-macos.app
 
     - name: Compress Executable
-      run: zip -r StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-${{ matrix.architecture }}.zip StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-${{ matrix.architecture }}.app
+      run: zip -r StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-${{ matrix.architecture }}-macos.zip StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-${{ matrix.architecture }}-macos.app
 
     - name: Upload architecture-specific artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: macos-${{ matrix.build_type }}-${{ matrix.architecture }}
-        path: StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-${{ matrix.architecture }}.zip
+        path: StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-${{ matrix.architecture }}-macos.zip
+
+  build_linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set Release variable
+      run: echo "Release=${{ matrix.build_type }}" >> $GITHUB_ENV
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ccache python3-pip zip
+        python3 -m pip install --upgrade pip
+        pip3 install Nuitka
+        if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
+
+    - name: Configure ccache
+      run: |
+        export CCACHE_DIR=$HOME/.cache/ccache
+        export CC="ccache gcc"
+        export CXX="ccache g++"
+        export CCACHE_MAXSIZE="500M"
+        ccache --zero-stats
+
+    - name: Build Executable
+      run: |
+        if [ "$Release" == "Release" ]; then
+          ccache --show-stats
+          nuitka --standalone --onefile --follow-imports --include-data-dir=.seleniumwire=seleniumwire StreamLabsTikTokStreamKeyGenerator.py
+          ccache --show-stats
+        else
+          ccache --show-stats
+          nuitka --standalone --onefile --follow-imports --include-data-dir=.seleniumwire=seleniumwire StreamLabsTikTokStreamKeyGenerator.py
+          ccache --show-stats
+        fi
+
+    - name: Rename Executable
+      run: mv StreamLabsTikTokStreamKeyGenerator.bin StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-linux.bin
+
+    - name: Compress Executable
+      run: zip StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-linux.zip StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-linux.bin
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-${{ matrix.build_type }}
+        path: |
+          ./StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-linux.zip
 
   release:
     runs-on: ubuntu-latest
-    needs: [build_windows, build_macos]
+    needs: [build_windows, build_macos, build_linux]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Download Windows artifacts
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v4
         with:
-          name: windows
+          pattern: windows-*
+          merge-multiple: true
           path: ./windows
 
-      - name: Download MacOS x86_64 Release artifacts
-        uses: actions/download-artifact@v4.1.7
+      - name: Download MacOS artifacts
+        uses: actions/download-artifact@v4
         with:
-          name: macos-Release-x86_64
-          path: ./macos/x86_64
+          pattern: macos-*
+          merge-multiple: true
+          path: ./macos
 
-      - name: Download MacOS arm64 Release artifacts
-        uses: actions/download-artifact@v4.1.7
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
         with:
-          name: macos-Release-arm64
-          path: ./macos/arm64
-
-      - name: Download MacOS x86_64 Debug artifacts
-        uses: actions/download-artifact@v4.1.7
-        with:
-          name: macos-Debug-x86_64
-          path: ./macos/x86_64
-
-      - name: Download MacOS arm64 Debug artifacts
-        uses: actions/download-artifact@v4.1.7
-        with:
-          name: macos-Debug-arm64
-          path: ./macos/arm64
+          pattern: linux-*
+          merge-multiple: true
+          path: ./linux
 
       - name: Create the release
         uses: softprops/action-gh-release@v1
@@ -162,9 +207,11 @@ jobs:
           prerelease: ${{ github.event.inputs.prerelease }}
           draft: false
           files: |
-            ./windows/StreamLabsTikTokStreamKeyGeneratorRelease.zip
-            ./windows/StreamLabsTikTokStreamKeyGeneratorDebug.zip
-            ./macos/x86_64/StreamLabsTikTokStreamKeyGeneratorRelease-x86_64.zip
-            ./macos/x86_64/StreamLabsTikTokStreamKeyGeneratorDebug-x86_64.zip
-            ./macos/arm64/StreamLabsTikTokStreamKeyGeneratorRelease-arm64.zip
-            ./macos/arm64/StreamLabsTikTokStreamKeyGeneratorDebug-arm64.zip
+            ./windows/StreamLabsTikTokStreamKeyGeneratorRelease-win.zip
+            ./windows/StreamLabsTikTokStreamKeyGeneratorDebug-win.zip
+            ./macos/StreamLabsTikTokStreamKeyGeneratorRelease-x86_64-macos.zip
+            ./macos/StreamLabsTikTokStreamKeyGeneratorDebug-x86_64-macos.zip
+            ./macos/StreamLabsTikTokStreamKeyGeneratorRelease-arm64-macos.zip
+            ./macos/StreamLabsTikTokStreamKeyGeneratorDebug-arm64-macos.zip
+            ./linux/StreamLabsTikTokStreamKeyGeneratorRelease-linux.zip
+            ./linux/StreamLabsTikTokStreamKeyGeneratorDebug-linux.zip
