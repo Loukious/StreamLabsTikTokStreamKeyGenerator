@@ -48,7 +48,7 @@ def fetch_game_mask_id(game_name):
         if category['full_name'] == game_name:
             game_category_entry.game_mask_id = category['game_mask_id']
             return category['game_mask_id']
-    return None
+    return ""
 
 def save_config():
     """Save entry values to a JSON file."""
