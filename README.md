@@ -40,6 +40,12 @@ The script will output:
 - **Stream key for OBS Studio (or any other streaming app):** Stream key that that you can use in OBS Studio to stream to TikTok.
 
 ## FAQ
+### I'm getting you `You can't open the application "***" because it may be damaged or incomplete` error on MacOS. What should I do?
+I don't own a Mac so I can't test the app on MacOS but you can try the following:
+1. Open Terminal.
+2. Run the following command: `xattr -dr com.apple.quarantine /path/to/the/app` (replace `/path/to/the/app` with the path to the app).
+3. Try to run the app again.
+
 ### I'm getting a `Maximum number of attempts reached. Try again later.` error. What should I do?
 This error sometimes occurs when TikTok detects selenium. You can use this [extension](https://chromewebstore.google.com/detail/export-cookie-json-file-f/nmckokihipjgplolmcmjakknndddifde) to export your cookies and import them into the script.
 1. Start by installing the above extension in your browser.
