@@ -40,7 +40,7 @@ def load_config():
             fetch_game_mask_id(data.get("game", ""))
 
     except:
-        print("Error loading config file.")
+        print("Error loading config file. Ignore this if it's the first time running the program or you never saved the config file before.")
 
 def fetch_game_mask_id(game_name):
     categories = stream.search(game_name)
