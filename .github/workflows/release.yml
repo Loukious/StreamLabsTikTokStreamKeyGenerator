@@ -131,7 +131,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ccache python3-pip zip
+        sudo apt-get install -y ccache python3-pip python3-tk zip
         python3 -m pip install --upgrade pip
         pip3 install Nuitka
         if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
