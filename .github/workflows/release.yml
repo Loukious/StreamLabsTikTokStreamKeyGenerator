@@ -148,11 +148,11 @@ jobs:
       run: |
         if [ "$Release" == "Release" ]; then
           ccache --show-stats
-          nuitka --standalone --onefile --follow-imports --include-data-dir=.seleniumwire=seleniumwire StreamLabsTikTokStreamKeyGenerator.py
+          nuitka --standalone --onefile --follow-imports --enable-plugin=tk-inter --include-data-dir=.seleniumwire=seleniumwire StreamLabsTikTokStreamKeyGenerator.py
           ccache --show-stats
         else
           ccache --show-stats
-          nuitka --standalone --onefile --follow-imports --include-data-dir=.seleniumwire=seleniumwire StreamLabsTikTokStreamKeyGenerator.py
+          nuitka --standalone --onefile --follow-imports --enable-plugin=tk-inter --include-data-dir=.seleniumwire=seleniumwire StreamLabsTikTokStreamKeyGenerator.py
           ccache --show-stats
         fi
 
