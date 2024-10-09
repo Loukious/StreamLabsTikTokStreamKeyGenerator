@@ -58,7 +58,7 @@ class TokenRetriever:
 
         # Now configure the webdriver with Selenium Wire options
         self.driver = uc.Chrome(seleniumwire_options=seleniumwire_options, options=chrome_options)
-        self.driver.get("https://www.tiktok.com")  # Load a page first before setting cookies
+        self.driver.get("https://www.tiktok.com/legal")  # Load a page first before setting cookies
         self.load_cookies(self.driver)
         self.driver.get(self.streamlabs_auth_url)
 
