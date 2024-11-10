@@ -12,6 +12,7 @@ class Stream:
     def search(self, game):
         if not game:
             return []
+        game = game[:25] # If the game name exceeds 25 characters, the API will return error 500
         url = f"https://streamlabs.com/api/v5/slobs/tiktok/info?category={game}"
         info = self.s.get(url).json()
         info["categories"].append({"full_name": "Other", "game_mask_id": ""})
