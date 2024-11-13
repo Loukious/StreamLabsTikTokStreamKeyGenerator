@@ -1,12 +1,14 @@
-config.json
 *.spec
 build/*
 dist/*
 */__pycache__/*
 .env
 __pycache__/*
-cookies.json
+*.json
 .venv/*
 StreamLabsTikTokStreamKeyGenerator.dist/*
 *.xml
 *.exe
+*.bat
+StreamLabsTikTokStreamKeyGeneratorCLI.py
+*.pem
