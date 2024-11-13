@@ -41,7 +41,7 @@ def load_config():
             fetch_game_mask_id(data.get("game", ""))
 
     except:
-        print("Error loading config file. Ignore this if it's the first time running the program or you never saved the config file before.")
+        print("Error loading config file. Ignore this if it's the first time running the program or you never saved your config before.")
 
 
 def load_account_info():
