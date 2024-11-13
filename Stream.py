@@ -5,7 +5,7 @@ class Stream:
     def __init__(self, token):
         self.s = requests.session()
         self.s.headers.update({
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) StreamlabsDesktop/1.16.7 Chrome/114.0.5735.289 Electron/25.9.3 Safari/537.36",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) StreamlabsDesktop/1.17.0 Chrome/122.0.6261.156 Electron/29.3.1 Safari/537.36",
             "authorization": f"Bearer {token}"
         })
 
