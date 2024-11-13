@@ -293,7 +293,7 @@ root = tk.Tk()
 root.title("StreamLabs TikTok Stream Key Generator")
 
 # Create a LabelFrame for token loading
-token_frame = tk.LabelFrame(root, text="Token Loader")
+token_frame = tk.LabelFrame(root, text="Token Loader", padx=10, pady=10)
 token_frame.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
 
 # Create the "Load token" button
@@ -337,7 +337,7 @@ can_go_live_entry = tk.Entry(token_frame, textvariable=can_go_live_var, width=50
 can_go_live_entry.pack(pady=5)
 
 # Create a LabelFrame for stream details
-stream_frame = tk.LabelFrame(root, text="Stream Details")
+stream_frame = tk.LabelFrame(root, text="Stream Details", padx=10, pady=10)
 stream_frame.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
 
 # Create a label for stream title
@@ -366,7 +366,7 @@ listbox.bind("<<ListboxSelect>>", on_select)
 listbox.bind("<Motion>", on_motion)
 
 # Create a LabelFrame for stream control buttons and info
-control_frame = tk.LabelFrame(root, text="Stream Control")
+control_frame = tk.LabelFrame(root, text="Stream Control", padx=10, pady=10)
 control_frame.grid(row=0, column=1, rowspan=2, padx=10, pady=10, sticky='nsew')
 
 # Create "Go Live" and "End Live" buttons
