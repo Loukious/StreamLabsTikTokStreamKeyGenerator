@@ -27,7 +27,10 @@ def load_config():
         game_category_entry.delete(0, tk.END)
         game_category_entry.insert(0, data.get("game", ""))
         game_category_entry.config(state=tk.DISABLED)
-
+        
+        audience_type_checkbox.config(state=tk.NORMAL)
+        audience_type_var.set(data.get("audience_type", "0"))
+        audience_type_checkbox.config(state=tk.DISABLED)
 
         if token_entry.get():
             global stream
@@ -35,6 +38,7 @@ def load_config():
             go_live_button.config(state=tk.NORMAL)
             stream_title_entry.config(state=tk.NORMAL)
             game_category_entry.config(state=tk.NORMAL)
+            audience_type_checkbox.config(state=tk.NORMAL)
             load_account_info()
 
         if stream:
@@ -92,6 +96,7 @@ def save_config():
     data = {
         "title": stream_title_entry.get(),
         "game": game_category_entry.get(),
+        "audience_type": audience_type_var.get(),
         "token": token_entry.get()
     }
     with open("config.json", "w") as file:
@@ -186,7 +191,7 @@ def on_token_entry_change(*args):
 def go_live():
     game_mask_id = getattr(game_category_entry, 'game_mask_id', "")
 
-    stream_url, stream_key = stream.start(stream_title_entry.get(), game_mask_id)
+    stream_url, stream_key = stream.start(stream_title_entry.get(), game_mask_id, audience_type_var.get())
 
     if stream_url or stream_key:
         stream_url_entry.config(state=tk.NORMAL)
@@ -364,6 +369,20 @@ listbox = tk.Listbox(stream_frame)
 listbox.pack_forget()
 listbox.bind("<<ListboxSelect>>", on_select)
 listbox.bind("<Motion>", on_motion)
+
+# Create a StringVar to hold the value for audience type
+audience_type_var = tk.StringVar(value='0')  # Default to '0' (everyone)
+
+# Create a checkbox for mature content
+audience_type_checkbox = tk.Checkbutton(
+    stream_frame,
+    text="Enable mature content",
+    variable=audience_type_var,
+    onvalue='1',  # Set to '1' when checked
+    offvalue='0',  # Set to '0' when unchecked
+    state=tk.DISABLED
+)
+audience_type_checkbox.pack(pady=5)
 
 # Create a LabelFrame for stream control buttons and info
 control_frame = tk.LabelFrame(root, text="Stream Control", padx=10, pady=10)

@@ -18,12 +18,13 @@ class Stream:
         info["categories"].append({"full_name": "Other", "game_mask_id": ""})
         return info["categories"]
 
-    def start(self, title, category):
+    def start(self, title, category, audience_type='0'):
         url = "https://streamlabs.com/api/v5/slobs/tiktok/stream/start"
         files=(
             ('title', (None, title)),
             ('device_platform', (None, 'win32')),
             ('category', (None, category)),
+            ('audience_type', (None, audience_type)),
         )
         response = self.s.post(url, files=files).json()
         try:
