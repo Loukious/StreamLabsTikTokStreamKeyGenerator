@@ -150,6 +150,8 @@ jobs:
         --show-anti-bloat-changes \
         --follow-stdlib \
         --follow-imports \
+        --enable-plugin=tk-inter \
+        --include-package=undetected_chromedriver \
         --nofollow-import-to="*.tests" \
         --nofollow-import-to="unittest" \
         --nofollow-import-to="pydoc" \
@@ -171,7 +173,7 @@ jobs:
           StreamLabsTikTokStreamKeyGenerator-${{ matrix.architecture }}-macos.zip
 
   build_linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: create-tag
     strategy:
       matrix:
@@ -184,7 +186,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ccache python3-pip python3-tk zip
+        sudo apt-get install -y ccache python3-pip python3-tk zip python3-distutils
         python3 -m pip install --upgrade pip
         pip3 install Nuitka clang
         if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
@@ -200,6 +202,8 @@ jobs:
           --static-libpython=no \
           --standalone \
           --enable-plugin=anti-bloat \
+          --enable-plugin=tk-inter \
+          --include-package=undetected_chromedriver \
           --show-modules \
           --show-anti-bloat-changes \
           --follow-stdlib \
