@@ -9,7 +9,7 @@ body:
     id: description
     attributes:
       label: "Description"
-      description: Please enter an explicit description of your issue (search for existing issues first)
+      description: Please enter an explicit description of your issue (SEARCH FOR EXISTING ISSUES FIRST). Also check [StreamLabs known issues](https://support.streamlabs.com/hc/en-us/categories/27279811363227-Known-Issues)
       placeholder: Short and explicit description of your incident...
     validations:
       required: true
