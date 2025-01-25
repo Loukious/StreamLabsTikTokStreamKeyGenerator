@@ -134,7 +134,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install Nuitka clang
+          pip install -U Nuitka clang certify
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Build Executable
@@ -154,6 +154,7 @@ jobs:
           --follow-imports \
           --enable-plugin=tk-inter \
           --include-package=undetected_chromedriver \
+          --include-package=certifi \
           --nofollow-import-to="*.tests" \
           --nofollow-import-to="unittest" \
           --nofollow-import-to="pydoc" \
@@ -190,7 +191,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ccache python3-pip python3-tk zip python3-distutils
           python3 -m pip install --upgrade pip
-          pip3 install Nuitka clang
+          pip3 install -U Nuitka clang certify
           if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
 
       - name: Build Executable
@@ -206,6 +207,7 @@ jobs:
           --enable-plugin=anti-bloat \
           --enable-plugin=tk-inter \
           --include-package=undetected_chromedriver \
+          --include-package=certifi \
           --show-modules \
           --show-anti-bloat-changes \
           --follow-stdlib \
