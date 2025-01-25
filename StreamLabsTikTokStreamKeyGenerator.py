@@ -153,7 +153,9 @@ def fetch_online_token():
         stream_title_entry.config(state=tk.NORMAL)
         game_category_entry.config(state=tk.NORMAL)
         go_live_button.config(state=tk.NORMAL)
+        audience_type_checkbox.config(state=tk.NORMAL)
         fetch_game_mask_id(game_category_entry.get())
+        load_account_info()
     else:
         messagebox.showerror("Error", "Failed to obtain token online.")
 
