@@ -6,7 +6,9 @@ from tkinter import messagebox
 import webbrowser
 from Stream import Stream
 from TokenRetriever import TokenRetriever
+import ssl
 
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def load_config():
     """Load entry values from a JSON file."""
