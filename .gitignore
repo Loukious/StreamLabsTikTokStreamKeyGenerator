@@ -12,3 +12,4 @@ StreamLabsTikTokStreamKeyGenerator.dist/*
 *.bat
 StreamLabsTikTokStreamKeyGeneratorCLI.py
 *.pem
+downloaded_files/*

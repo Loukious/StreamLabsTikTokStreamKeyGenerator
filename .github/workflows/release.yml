@@ -40,10 +40,10 @@ jobs:
         run: |
           echo "RELEASE=${{ matrix.build_type }}" >> $env:GITHUB_ENV
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.13
         uses: actions/setup-python@v3
         with:
-          python-version: "3.10"
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
@@ -61,47 +61,45 @@ jobs:
             --assume-yes-for-downloads `
             --show-scons `
             --clang `
-            --lto=no `
+            --lto=yes `
             --jobs=4 `
             --static-libpython=no `
             --standalone `
             --enable-plugin=anti-bloat `
-            --enable-plugin=tk-inter `
             --show-modules `
             --show-anti-bloat-changes `
             --follow-stdlib `
             --follow-imports `
             --nofollow-import-to="*.tests" `
-            --nofollow-import-to="unittest" `
             --nofollow-import-to="pydoc" `
             --nofollow-import-to="test" `
             --prefer-source-code `
+            --include-module=unittest `
             --windows-console-mode=disable `
-            --include-data-dir=".seleniumwire=.seleniumwire" `
-            --include-data-dir="seleniumwire=seleniumwire" `
+            --include-module=TokenRetriever `
+            --plugin-enable=pyside6 `
             StreamLabsTikTokStreamKeyGenerator.py
           } else {
             nuitka `
             --assume-yes-for-downloads `
             --show-scons `
             --clang `
-            --lto=no `
+            --lto=yes `
             --jobs=4 `
             --static-libpython=no `
             --standalone `
             --enable-plugin=anti-bloat `
-            --enable-plugin=tk-inter `
             --show-modules `
             --show-anti-bloat-changes `
             --follow-stdlib `
             --follow-imports `
             --nofollow-import-to="*.tests" `
-            --nofollow-import-to="unittest" `
             --nofollow-import-to="pydoc" `
             --nofollow-import-to="test" `
             --prefer-source-code `
-            --include-data-dir=".seleniumwire=.seleniumwire" `
-            --include-data-dir="seleniumwire=seleniumwire" `
+            --include-module=unittest `
+            --include-module=TokenRetriever `
+            --plugin-enable=pyside6 `
             StreamLabsTikTokStreamKeyGenerator.py
           }
 
@@ -126,10 +124,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.13
         uses: actions/setup-python@v3
         with:
-          python-version: "3.10"
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
@@ -143,31 +141,22 @@ jobs:
           --assume-yes-for-downloads \
           --show-scons \
           --clang \
-          --lto=no \
+          --lto=yes \
           --jobs=4 \
           --static-libpython=no \
           --standalone \
           --enable-plugin=anti-bloat \
-          --show-modules \
-          --show-anti-bloat-changes \
-          --follow-stdlib \
-          --follow-imports \
-          --enable-plugin=tk-inter \
-          --include-package=undetected_chromedriver \
+          --enable-plugin=pyside6 \
           --include-package=certifi \
-          --nofollow-import-to="*.tests" \
-          --nofollow-import-to="unittest" \
-          --nofollow-import-to="pydoc" \
-          --nofollow-import-to="test" \
           --prefer-source-code \
-          --include-data-dir=".seleniumwire=.seleniumwire" \
-          --include-data-dir="seleniumwire=seleniumwire" \
           --macos-target-arch=${{ matrix.architecture }} \
+          --macos-create-app-bundle \
+          --include-module=TokenRetriever \
           StreamLabsTikTokStreamKeyGenerator.py
 
       - name: Compress Executable
         run: |
-          zip -r StreamLabsTikTokStreamKeyGenerator-${{ matrix.architecture }}-macos.zip StreamLabsTikTokStreamKeyGenerator.dist/*
+          zip -r StreamLabsTikTokStreamKeyGenerator-${{ matrix.architecture }}-macos.zip StreamLabsTikTokStreamKeyGenerator.app
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -200,25 +189,18 @@ jobs:
           --assume-yes-for-downloads \
           --show-scons \
           --clang \
-          --lto=no \
+          --lto=yes \
           --jobs=4 \
           --static-libpython=no \
           --standalone \
           --enable-plugin=anti-bloat \
-          --enable-plugin=tk-inter \
-          --include-package=undetected_chromedriver \
+          --enable-plugin=pyside6 \
           --include-package=certifi \
           --show-modules \
           --show-anti-bloat-changes \
           --follow-stdlib \
           --follow-imports \
-          --nofollow-import-to="*.tests" \
-          --nofollow-import-to="unittest" \
-          --nofollow-import-to="pydoc" \
-          --nofollow-import-to="test" \
           --prefer-source-code \
-          --include-data-dir=".seleniumwire=.seleniumwire" \
-          --include-data-dir="seleniumwire=seleniumwire" \
           StreamLabsTikTokStreamKeyGenerator.py
 
       - name: Compress Executable

@@ -1,444 +1,518 @@
+import glob
+import os
+import platform
+import re
+import sys
 import json
-import multiprocessing
 import threading
-import tkinter as tk
-from tkinter import messagebox
-import webbrowser
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+                              QGroupBox, QPushButton, QLineEdit, QLabel, QCheckBox,
+                              QListWidget, QMessageBox, QListWidgetItem, QSizePolicy)
+from PySide6.QtCore import Signal, QTimer
+from PySide6.QtGui import QDesktopServices
 from Stream import Stream
 from TokenRetriever import TokenRetriever
 import ssl
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-def load_config():
-    """Load entry values from a JSON file."""
-    try:
-        with open("config.json", "r+") as file:
-            data = json.load(file)
-            
-        token_entry.delete(0, tk.END)
-        token_entry.insert(0, data.get("token", ""))
-
-        stream_title_entry.config(state=tk.NORMAL)
-        stream_title_entry.delete(0, tk.END)
-        stream_title_entry.insert(0, data.get("title", ""))
-        stream_title_entry.config(state=tk.DISABLED)
-
-
-        game_category_entry.config(state=tk.NORMAL)
-        game_category_entry.delete(0, tk.END)
-        game_category_entry.insert(0, data.get("game", ""))
-        game_category_entry.config(state=tk.DISABLED)
+class StreamApp(QMainWindow):
+    update_suggestions = Signal(list)
+    update_ui = Signal()
+    
+    def __init__(self):
+        super().__init__()
+        self.stream = None
+        self.game_mask_id = ""
+        self.init_ui()
+        self.load_config()
         
-        audience_type_checkbox.config(state=tk.NORMAL)
-        audience_type_var.set(data.get("audience_type", "0"))
-        audience_type_checkbox.config(state=tk.DISABLED)
+        QTimer.singleShot(3000, self.show_donation_reminder)
 
-        if token_entry.get():
-            global stream
-            stream = Stream(token_entry.get())
-            go_live_button.config(state=tk.NORMAL)
-            stream_title_entry.config(state=tk.NORMAL)
-            game_category_entry.config(state=tk.NORMAL)
-            audience_type_checkbox.config(state=tk.NORMAL)
-            load_account_info()
+        # Connect signals
+        self.update_suggestions.connect(self.update_suggestions_list)
+        self.update_ui.connect(self.handle_ui_update)
 
-        if stream:
-            fetch_game_mask_id(data.get("game", ""))
+    def init_ui(self):
+        self.setWindowTitle("StreamLabs TikTok Stream Key Generator")
+        self.setMinimumSize(800, 600)
 
-    except:
-        print("Error loading config file. Ignore this if it's the first time running the program or you never saved your config before.")
+        main_widget = QWidget()
+        main_layout = QHBoxLayout()
+        main_widget.setLayout(main_layout)
+        self.setCentralWidget(main_widget)
 
+        # Left column
+        left_column = QVBoxLayout()
+        main_layout.addLayout(left_column)
 
-def load_account_info():
-    if stream:
-        info = stream.getInfo()
-        if "user" in info and "username" in info["user"]:
-            tiktok_username_entry.config(state=tk.NORMAL)
-            tiktok_username_entry.delete(0, tk.END)
-            tiktok_username_entry.insert(0, info["user"]["username"])
-            tiktok_username_entry.config(state=tk.DISABLED)
+        # Token Section
+        token_group = QGroupBox("Token Loader")
+        token_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        left_column.addWidget(token_group)
+
+        token_layout = QVBoxLayout()
+        token_layout.setContentsMargins(8, 12, 8, 8)
+        token_layout.setSpacing(6)
+        token_group.setLayout(token_layout)
+
+        # Token Entry Row
+        token_entry_row = QHBoxLayout()
+        token_entry_row.setSpacing(5)
+
+        self.token_entry = QLineEdit()
+        self.token_entry.setPlaceholderText("Paste token here or load below...")
+        self.token_entry.setEchoMode(QLineEdit.Password)
+        self.token_entry.setFixedHeight(28)
+        self.token_entry.textChanged.connect(self.handle_token_change)
+        token_entry_row.addWidget(self.token_entry)
+
+        # Eye icon for password visibility
+        self.toggle_token_btn = QPushButton()
+        self.toggle_token_btn.setFixedSize(28, 28)
+        self.toggle_token_btn.setText("👁️")
+        self.toggle_token_btn.setToolTip("Show token")
+        self.toggle_token_btn.clicked.connect(self.toggle_token_visibility)
+        token_entry_row.addWidget(self.toggle_token_btn)
+
+        token_layout.addLayout(token_entry_row)
+
+        # Token Load Buttons Row
+        load_buttons_row = QHBoxLayout()
+        load_buttons_row.setSpacing(5)
+
+        # Local Token Button
+        self.load_local_btn = QPushButton("Load from PC")
+        self.load_local_btn.setFixedHeight(30)
+        self.load_local_btn.setToolTip("Load token from Streamlabs desktop app data")
+        self.load_local_btn.clicked.connect(self.load_local_token)
+        load_buttons_row.addWidget(self.load_local_btn)
+
+        # Online Token Button
+        self.load_online_btn = QPushButton("Load from Web")
+        self.load_online_btn.setFixedHeight(30)
+        self.load_online_btn.setToolTip("Get token through browser login")
+        self.load_online_btn.clicked.connect(self.fetch_online_token)
+        load_buttons_row.addWidget(self.load_online_btn)
+
+        token_layout.addLayout(load_buttons_row)
+
+        # Account Info Section
+        account_info_label = QLabel("Account Information")
+        account_info_label.setStyleSheet("font-weight: bold; margin-top: 8px;")
+        token_layout.addWidget(account_info_label)
+
+        # Username
+        username_row = QHBoxLayout()
+        username_row.setSpacing(5)
+        username_label = QLabel("Username:")
+        username_label.setFixedWidth(100)
+        self.tiktok_username = QLineEdit()
+        self.tiktok_username.setReadOnly(True)
+        self.tiktok_username.setFixedHeight(26)
+        username_row.addWidget(username_label)
+        username_row.addWidget(self.tiktok_username)
+        token_layout.addLayout(username_row)
+
+        # Status
+        status_row = QHBoxLayout()
+        status_row.setSpacing(5)
+        status_label = QLabel("Status:")
+        status_label.setFixedWidth(100)
+        self.app_status = QLineEdit()
+        self.app_status.setReadOnly(True)
+        self.app_status.setFixedHeight(26)
+        status_row.addWidget(status_label)
+        status_row.addWidget(self.app_status)
+        token_layout.addLayout(status_row)
+
+        # Go Live Status
+        live_row = QHBoxLayout()
+        live_row.setSpacing(5)
+        live_label = QLabel("Can Go Live:")
+        live_label.setFixedWidth(100)
+        self.can_go_live = QLineEdit()
+        self.can_go_live.setReadOnly(True)
+        self.can_go_live.setFixedHeight(26)
+        live_row.addWidget(live_label)
+        live_row.addWidget(self.can_go_live)
+        token_layout.addLayout(live_row)
+
+        # Add stretch to prevent expansion
+        token_layout.addStretch()
+
+        # Stream Details
+        stream_group = QGroupBox("Stream Details")
+        left_column.addWidget(stream_group)
+        stream_layout = QVBoxLayout()
+        stream_layout.setContentsMargins(8, 8, 8, 8)  # Left, Top, Right, Bottom margins
+        stream_layout.setSpacing(5)  # Reduced spacing between widgets
+        stream_group.setLayout(stream_layout)
+
+        # Stream Title
+        title_label = QLabel("Stream Title:")
+        title_label.setStyleSheet("font-weight: bold;")
+        stream_layout.addWidget(title_label)
+        self.stream_title = QLineEdit()
+        self.stream_title.setFixedHeight(28)  # Slightly smaller height
+        stream_layout.addWidget(self.stream_title)
+
+        # Game Category
+        game_label = QLabel("Game Category:")
+        game_label.setStyleSheet("font-weight: bold;")
+        stream_layout.addWidget(game_label)
+        self.game_category = QLineEdit()
+        self.game_category.setFixedHeight(28)
+        self.game_category.textChanged.connect(self.handle_game_search)
+        stream_layout.addWidget(self.game_category)
+
+        # Suggestions List
+        self.suggestions_list = QListWidget()
+        self.suggestions_list.hide()
+        self.suggestions_list.setFixedHeight(100)  # Limit height of suggestions
+        self.suggestions_list.itemClicked.connect(self.handle_suggestion_selected)
+        stream_layout.addWidget(self.suggestions_list)
+
+        # Mature Checkbox
+        self.mature_checkbox = QCheckBox("Enable mature content")
+        self.mature_checkbox.setStyleSheet("padding: 2px;")  # Reduce internal padding
+        stream_layout.addWidget(self.mature_checkbox)
+
+        # Add stretch to push everything up
+        stream_layout.addStretch()
+
+        # Right column (Controls)
+        control_group = QGroupBox("Stream Control")
+        control_group.setMinimumWidth(250)  # Set a minimum width for the control column
+        main_layout.addWidget(control_group)
+
+        control_layout = QVBoxLayout()
+        control_layout.setContentsMargins(8, 12, 8, 8)  # Tighter margins
+        control_layout.setSpacing(6)  # Reduced spacing between widgets
+        control_group.setLayout(control_layout)
+
+        # Buttons row
+        button_row = QHBoxLayout()
+        button_row.setSpacing(5)  # Tight spacing between buttons
+
+        self.go_live_btn = QPushButton("Go Live")
+        self.go_live_btn.setEnabled(False)
+        self.go_live_btn.clicked.connect(self.start_stream)
+        self.go_live_btn.setFixedHeight(32)  # Consistent button height
+        button_row.addWidget(self.go_live_btn)
+
+        self.end_live_btn = QPushButton("End Live")
+        self.end_live_btn.setEnabled(False)
+        self.end_live_btn.clicked.connect(self.end_stream)
+        self.end_live_btn.setFixedHeight(32)
+        button_row.addWidget(self.end_live_btn)
+
+        control_layout.addLayout(button_row)
+
+        # URL Section
+        url_label = QLabel("Stream URL:")
+        url_label.setStyleSheet("font-weight: bold; margin-top: 5px;")
+        control_layout.addWidget(url_label)
+
+        self.stream_url = QLineEdit()
+        self.stream_url.setReadOnly(True)
+        self.stream_url.setFixedHeight(28)  # Compact height
+        control_layout.addWidget(self.stream_url)
+
+        self.copy_url_btn = QPushButton("Copy URL")
+        self.copy_url_btn.setFixedHeight(28)
+        self.copy_url_btn.clicked.connect(lambda: self.copy_to_clipboard(self.stream_url))
+        control_layout.addWidget(self.copy_url_btn)
+
+        # Key Section
+        key_label = QLabel("Stream Key:")
+        key_label.setStyleSheet("font-weight: bold; margin-top: 5px;")
+        control_layout.addWidget(key_label)
+
+        self.stream_key = QLineEdit()
+        self.stream_key.setReadOnly(True)
+        self.stream_key.setFixedHeight(28)
+        control_layout.addWidget(self.stream_key)
+
+        self.copy_key_btn = QPushButton("Copy Key")
+        self.copy_key_btn.setFixedHeight(28)
+        self.copy_key_btn.clicked.connect(lambda: self.copy_to_clipboard(self.stream_key))
+        control_layout.addWidget(self.copy_key_btn)
+
+        # Add stretch to prevent expansion of widgets
+        control_layout.addStretch()
+        # Bottom buttons
+        bottom_buttons = QHBoxLayout()
+        left_column.addLayout(bottom_buttons)
+
+        self.save_btn = QPushButton("Save Config")
+        self.save_btn.clicked.connect(self.save_config)
+        bottom_buttons.addWidget(self.save_btn)
+
+        self.help_btn = QPushButton("Help")
+        self.help_btn.clicked.connect(self.show_help)
+        bottom_buttons.addWidget(self.help_btn)
+        
+        self.donate_btn = QPushButton("☕ Donate")
+        self.donate_btn.setToolTip("Support the developer")
+        self.donate_btn.clicked.connect(lambda: QDesktopServices.openUrl("https://buymeacoffee.com/loukious"))
+        bottom_buttons.addWidget(self.donate_btn)
+
+        self.monitor_btn = QPushButton("Open Live Monitor")
+        self.monitor_btn.clicked.connect(self.open_live_monitor)
+        bottom_buttons.addWidget(self.monitor_btn)
+
+    def toggle_token_visibility(self):
+        """Toggle token visibility and update emoji"""
+        if self.token_entry.echoMode() == QLineEdit.Normal:
+            self.token_entry.setEchoMode(QLineEdit.Password)
+            self.toggle_token_btn.setText("👁️")  # Closed eye
+            self.toggle_token_btn.setToolTip("Show token")
         else:
-            tiktok_username_entry.config(state=tk.NORMAL)
-            tiktok_username_entry.delete(0, tk.END)
-            tiktok_username_entry.insert(0, "Unknown")
-            tiktok_username_entry.config(state=tk.DISABLED)
-        if "application_status" in info and "status" in info["application_status"]:
-            streamlabs_app_status_entry.config(state=tk.NORMAL)
-            streamlabs_app_status_entry.delete(0, tk.END)
-            streamlabs_app_status_entry.insert(0, info["application_status"]["status"])
-            streamlabs_app_status_entry.config(state=tk.DISABLED)
+            self.token_entry.setEchoMode(QLineEdit.Normal)
+            self.toggle_token_btn.setText("👁️‍🗨️")  # Eye with speech bubble (visible)
+            self.toggle_token_btn.setToolTip("Hide token")
+
+    def handle_token_change(self):
+        self.go_live_btn.setEnabled(bool(self.token_entry.text()))
+
+    def load_config(self):
+        try:
+            with open("config.json", "r") as file:
+                data = json.load(file)
+                self.token_entry.setText(data.get("token", ""))
+                self.stream_title.setText(data.get("title", ""))
+                self.game_category.setText(data.get("game", ""))
+                self.mature_checkbox.setChecked(data.get("audience_type", "0") == "1")
+                self.suppress_donation_reminder = data.get("suppress_donation_reminder", False)
+
+                if self.token_entry.text():
+                    self.stream = Stream(self.token_entry.text())
+                    self.load_account_info()
+                    self.fetch_game_mask_id(self.game_category.text())
+
+        except Exception as e:
+            self.suppress_donation_reminder = False
+            QMessageBox.warning(self, "Config Error", 
+                              "Error loading config: {}\nIgnore if first run.".format(str(e)))
+
+    def save_config(self):
+        data = {
+            "title": self.stream_title.text(),
+            "game": self.game_category.text(),
+            "audience_type": "1" if self.mature_checkbox.isChecked() else "0",
+            "token": self.token_entry.text(),
+            "suppress_donation_reminder": self.suppress_donation_reminder
+        }
+        with open("config.json", "w") as file:
+            json.dump(data, file)
+        QMessageBox.information(self, "Config Saved", "Configuration saved successfully!")
+
+    def load_account_info(self):
+        if self.stream:
+            try:
+                info = self.stream.getInfo()
+                user = info.get("user", {})
+                self.tiktok_username.setText(user.get("username", "Unknown"))
+                
+                app_status = info.get("application_status", {})
+                self.app_status.setText(app_status.get("status", "Unknown"))
+                
+                self.can_go_live.setText(str(info.get("can_be_live", False)))
+                
+                if not info.get("can_be_live", False):
+                    self.stream_title.setEnabled(False)
+                    self.game_category.setEnabled(False)
+                    self.mature_checkbox.setEnabled(False)
+                    self.go_live_btn.setEnabled(False)
+                else:
+                    self.stream_title.setEnabled(True)
+                    self.game_category.setEnabled(True)
+                    self.mature_checkbox.setEnabled(True)
+                    self.go_live_btn.setEnabled(True)
+
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to load account info: {str(e)}")
+
+    def populate_token(self):
+        token = self.load_local_token()
+        if token:
+            self.token_entry.setText(token)
+            self.stream = Stream(token)
+            self.load_account_info()
+            self.fetch_game_mask_id(self.game_category.text())
         else:
-            streamlabs_app_status_entry.config(state=tk.NORMAL)
-            streamlabs_app_status_entry.delete(0, tk.END)
-            streamlabs_app_status_entry.insert(0, "Unknown")
-            streamlabs_app_status_entry.config(state=tk.DISABLED)
-        if "can_be_live" in info:
-            can_go_live_entry.config(state=tk.NORMAL)
-            can_go_live_entry.delete(0, tk.END)
-            can_go_live_entry.insert(0, str(info["can_be_live"]))
-            can_go_live_entry.config(state=tk.DISABLED)
+            self.fetch_online_token()
+
+    def load_local_token(self):
+        # Determine the correct path based on the operating system
+        if platform.system() == 'Windows':
+            path_pattern = os.path.expandvars(r'%appdata%\slobs-client\Local Storage\leveldb\*.log')
+        elif platform.system() == 'Darwin':  # macOS
+            path_pattern = os.path.expanduser('~/Library/Application Support/slobs-client/Local Storage/leveldb/*.log')
         else:
-            can_go_live_entry.config(state=tk.NORMAL)
-            can_go_live_entry.delete(0, tk.END)
-            can_go_live_entry.insert(0, "Unknown")
-            can_go_live_entry.config(state=tk.DISABLED)
+            return None
 
-
-def fetch_game_mask_id(game_name):
-    categories = stream.search(game_name)
-    for category in categories:
-        if category['full_name'] == game_name:
-            game_category_entry.game_mask_id = category['game_mask_id']
-            return category['game_mask_id']
-    return ""
-
-def save_config():
-    """Save entry values to a JSON file."""
-    data = {
-        "title": stream_title_entry.get(),
-        "game": game_category_entry.get(),
-        "audience_type": audience_type_var.get(),
-        "token": token_entry.get()
-    }
-    with open("config.json", "w") as file:
-        json.dump(data, file)
-
-def load_token():
-    import os
-    import re
-    import glob
-    import platform
-
-    # Determine the correct path based on the operating system
-    if platform.system() == 'Windows':
-        path_pattern = os.path.expandvars(r'%appdata%\slobs-client\Local Storage\leveldb\*.log')
-    elif platform.system() == 'Darwin':  # macOS
-        path_pattern = os.path.expanduser('~/Library/Application Support/slobs-client/Local Storage/leveldb/*.log')
-    else:
+        # Get all files matching the pattern
+        files = glob.glob(path_pattern)
+        
+        # Sort files by date modified, newest first
+        files.sort(key=os.path.getmtime, reverse=True)
+        
+        # Define the regex pattern to search for the apiToken
+        token_pattern = re.compile(r'"apiToken":"([a-f0-9]+)"', re.IGNORECASE)
+        
+        # Loop through files and search for the token pattern
+        for file in files:
+            try:
+                with open(file, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+                    matches = token_pattern.findall(content)
+                    if matches:
+                        # Get the last occurrence of the token
+                        token = matches[-1]
+                        return token
+            except Exception as e:
+                QMessageBox.critical("Error", f"Error reading file {file}: {e}")
+        
+        QMessageBox.information(self, "API Token", "No API Token found locally. A webpage will now open to allow you to login into your TikTok account.")
         return None
 
-    # Get all files matching the pattern
-    files = glob.glob(path_pattern)
-    
-    # Sort files by date modified, newest first
-    files.sort(key=os.path.getmtime, reverse=True)
-    
-    # Define the regex pattern to search for the apiToken
-    token_pattern = re.compile(r'"apiToken":"([a-f0-9]+)"', re.IGNORECASE)
-    
-    # Loop through files and search for the token pattern
-    for file in files:
-        try:
-            with open(file, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-                matches = token_pattern.findall(content)
-                if matches:
-                    # Get the last occurrence of the token
-                    token = matches[-1]
-                    return token
-        except Exception as e:
-            messagebox.showerror("Error", f"Error reading file {file}: {e}")
-    
-    messagebox.showinfo("API Token", "No API Token found locally. A webpage will now open to allow you to login into your TikTok account.")
-    return None
-
-def fetch_online_token():
-    retriever = TokenRetriever()
-    token = retriever.retrieve_token()
-    if token:
-        token_entry.delete(0, tk.END)
-        token_entry.insert(0, token)
-        token_entry.config(show='*')
-        global stream
-        stream = Stream(token)
-        stream_title_entry.config(state=tk.NORMAL)
-        game_category_entry.config(state=tk.NORMAL)
-        go_live_button.config(state=tk.NORMAL)
-        audience_type_checkbox.config(state=tk.NORMAL)
-        fetch_game_mask_id(game_category_entry.get())
-        load_account_info()
-    else:
-        messagebox.showerror("Error", "Failed to obtain token online.")
-
-def populate_token():
-    global stream
-    token = load_token()
-    if not token:
-        fetch_online_token()  # If no local token, try fetching online
-    else:
-        token_entry.delete(0, tk.END)
-        token_entry.insert(0, token)
-        token_entry.config(show='*')
-        stream = Stream(token)
-        load_account_info()
-        stream_title_entry.config(state=tk.NORMAL)
-        game_category_entry.config(state=tk.NORMAL)
-        go_live_button.config(state=tk.NORMAL)
-        # Fetch game_mask_id after token is loaded
-        fetch_game_mask_id(game_category_entry.get())
-
-def toggle_token_visibility():
-    if token_entry.cget('show') == '':
-        token_entry.config(show='*')
-        toggle_button.config(text='Show Token')
-    else:
-        token_entry.config(show='')
-        toggle_button.config(text='Hide Token')
-
-def on_token_entry_change(*args):
-    if token_entry.get():  # Check if the token_entry has any text
-        go_live_button.config(state=tk.NORMAL)  # Enable the Go Live button
-    else:
-        go_live_button.config(state=tk.DISABLED)  # Disable the Go Live button if empty
-
-def go_live():
-    game_mask_id = getattr(game_category_entry, 'game_mask_id', "")
-
-    stream_url, stream_key = stream.start(stream_title_entry.get(), game_mask_id, audience_type_var.get())
-
-    if stream_url or stream_key:
-        stream_url_entry.config(state=tk.NORMAL)
-        stream_key_entry.config(state=tk.NORMAL)
-
-        stream_url_entry.delete(0, tk.END)
-        stream_url_entry.insert(0, stream_url)
-
-        stream_key_entry.delete(0, tk.END)
-        stream_key_entry.insert(0, stream_key)
-
-        stream_url_entry.config(state='readonly')
-        stream_key_entry.config(state='readonly')
-        
-        end_live_button.config(state=tk.NORMAL)
-        messagebox.showinfo("Go Live", "Stream started successfully!")
-    else:
-        messagebox.showerror("Go Live", "Error starting stream.")
-
-
-def end_live():
-    end_live_button.config(state=tk.DISABLED)
-    stream_url_entry.config(state=tk.NORMAL)
-    stream_key_entry.config(state=tk.NORMAL)
-
-    stream_url_entry.delete(0, tk.END)
-    stream_url_entry.insert(0, "")
-
-    stream_key_entry.delete(0, tk.END)
-    stream_key_entry.insert(0, "")
-
-    stream_url_entry.config(state='readonly')
-    stream_key_entry.config(state='readonly')
-    if stream:
-        success = stream.end()
-        if success:
-            messagebox.showinfo("End Live", "Stream ended successfully!")
+    def fetch_online_token(self):
+        retriever = TokenRetriever()
+        token = retriever.retrieve_token()
+        if token:
+            self.token_entry.setText(token)
+            self.stream = Stream(token)
+            self.load_account_info()
+            self.fetch_game_mask_id(self.game_category.text())
         else:
-            messagebox.showerror("End Live", "Error ending stream.")
-    else:
-        messagebox.showerror("End Live", "No active stream found.")
+            QMessageBox.critical(self, "Error", "Failed to obtain token online!")
 
-def copy_to_clipboard(entry):
-    root.clipboard_clear()
-    root.clipboard_append(entry.get())
-    messagebox.showinfo("Copy", "Copied to clipboard!")
+    def fetch_game_mask_id(self, game_name):
+        if self.stream:
+            try:
+                categories = self.stream.search(game_name)
+                for category in categories:
+                    if category['full_name'] == game_name:
+                        self.game_mask_id = category['game_mask_id']
+                        return
+                self.game_mask_id = ""
+            except Exception as e:
+                QMessageBox.warning(self, "Search Error", f"Failed to search games: {str(e)}")
 
-def show_help():
-    help_window = tk.Toplevel(root)
-    help_window.title("Help")
-    
-    help_message = """\
-    1. First you have to apply and get access to LIVE on Streamlabs using the link on the bottom
-    2. Install Streamlabs and log into your TikTok account
-    3. Use this app to get Streamlabs token
-    4. Go live!
-    """
+    def handle_game_search(self, text):
+        if text and self.stream:
+            threading.Thread(target=self.search_games, args=(text,)).start()
+        else:
+            self.suggestions_list.hide()
 
-    help_label = tk.Label(help_window, text=help_message, justify='left', padx=10, pady=10)
-    help_label.pack()
+    def search_games(self, text):
+        try:
+            categories = self.stream.search(text)
+            self.update_suggestions.emit(categories)
+        except Exception as e:
+            QMessageBox.critical(self, "Search Error", f"Game search failed: {str(e)}")
 
-    help_link = tk.Label(help_window, text="Click here to apply for LIVE access on Streamlabs", fg="blue", cursor="hand2")
-    help_link.pack()
-    help_link.bind("<Button-1>", lambda e: webbrowser.open("https://tiktok.com/falcon/live_g/live_access_pc_apply/result/index.html?id=GL6399433079641606942&lang=en-US"))
+    def update_suggestions_list(self, categories):
+        self.suggestions_list.clear()
+        for category in categories:
+            self.suggestions_list.addItem(QListWidgetItem(category['full_name']))
+        self.suggestions_list.setVisible(bool(categories))
 
-def on_keyrelease(event):
-    value = event.widget.get()
-    if value == '':
-        listbox.pack_forget()
-    else:
-        threading.Thread(target=search_and_update_listbox, args=(value,)).start()
+    def handle_suggestion_selected(self, item):
+        self.game_category.setText(item.text())
+        self.fetch_game_mask_id(item.text())
+        self.suggestions_list.hide()
 
-def search_and_update_listbox(value):
-    categories = stream.search(value)
-    listbox.delete(0, tk.END)
-    for category in categories:
-        listbox.insert(tk.END, category['full_name'])
-    if categories:
-        listbox.pack(fill='x', pady=(0, 10))
-    else:
-        listbox.pack_forget()
+    def start_stream(self):
+        try:
+            audience_type = "1" if self.mature_checkbox.isChecked() else "0"
+            stream_url, stream_key = self.stream.start(
+                self.stream_title.text(),
+                self.game_mask_id,
+                audience_type
+            )
+            
+            if stream_url and stream_key:
+                self.stream_url.setText(stream_url)
+                self.stream_key.setText(stream_key)
+                self.end_live_btn.setEnabled(True)
+                self.go_live_btn.setEnabled(False)
+                QMessageBox.information(self, "Live Started", "Stream started successfully!")
+            else:
+                QMessageBox.critical(self, "Error", "Failed to start stream!")
 
-def on_select(event):
-    widget = event.widget
-    selection = widget.curselection()
-    if selection:
-        index = selection[0]
-        data = widget.get(index)
-        game_category_entry.delete(0, tk.END)
-        game_category_entry.insert(0, data)
-        game_category_entry.game_mask_id = fetch_game_mask_id(data)
-        listbox.pack_forget()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to start stream: {str(e)}")
 
-def on_motion(event):
-    widget = event.widget
-    widget.focus_set()
-    widget.selection_clear(0, tk.END)
-    index = widget.nearest(event.y)
-    widget.selection_set(index)
-    widget.activate(index)
+    def end_stream(self):
+        try:
+            if self.stream.end():
+                self.stream_url.clear()
+                self.stream_key.clear()
+                self.end_live_btn.setEnabled(False)
+                self.go_live_btn.setEnabled(True)
+                QMessageBox.information(self, "Live Ended", "Stream ended successfully!")
+            else:
+                QMessageBox.critical(self, "Error", "Failed to end stream!")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to end stream: {str(e)}")
 
-# Create the main window
-root = tk.Tk()
-root.title("StreamLabs TikTok Stream Key Generator")
+    def copy_to_clipboard(self, widget):
+        QApplication.clipboard().setText(widget.text())
+        QMessageBox.information(self, "Copied", "Text copied to clipboard!")
 
-# Create a LabelFrame for token loading
-token_frame = tk.LabelFrame(root, text="Token Loader", padx=10, pady=10)
-token_frame.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
+    def show_help(self):
+        help_text = """1. Apply for LIVE access on Streamlabs
+2. Install Streamlabs and login to TikTok
+3. Use this app to get Streamlabs token
+4. Go live!"""
+        
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Help")
+        msg.setText(help_text)
+        msg.addButton(QMessageBox.Ok)
+        msg.exec()
 
-# Create the "Load token" button
-load_button = tk.Button(token_frame, text="Load token", command=populate_token)
-load_button.pack(pady=5)
+    def show_donation_reminder(self):
+        
+        if self.suppress_donation_reminder:
+            return
+        
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Support Development")
+        msg.setText("Enjoying this app? Consider supporting its development!")
+        
+        dont_show_again = QCheckBox("Never show this message again")
+        msg.setCheckBox(dont_show_again)
+        
+        # Add buttons
+        donate_btn = msg.addButton("Donate Now", QMessageBox.AcceptRole)
+        msg.addButton(QMessageBox.Ok)
+        
+        # Make the "Donate Now" button more prominent
+        donate_btn.setStyleSheet("font-weight: bold;")
+        
+        # Execute the message box
+        msg.exec()
+        
+        if dont_show_again.isChecked():
+            self.suppress_donation_reminder = True
+            self.save_config()
+        # Handle button clicks
+        if msg.clickedButton() == donate_btn:
+            QDesktopServices.openUrl("https://buymeacoffee.com/loukious")
 
-# Create a text entry to display the token, initially hidden
-token_var = tk.StringVar()
-token_entry = tk.Entry(token_frame, width=50, textvariable=token_var, show='*', justify='center')
-token_entry.pack(pady=5)
+    def open_live_monitor(self):
+        QDesktopServices.openUrl("https://livecenter.tiktok.com/live_monitor?lang=en-US")
 
-# Bind the StringVar to the on_token_entry_change function
-token_var.trace_add("write", on_token_entry_change)
+    def handle_ui_update(self):
+        self.load_account_info()
 
-# Create a button to toggle token visibility
-toggle_button = tk.Button(token_frame, text="Show Token", command=toggle_token_visibility)
-toggle_button.pack(pady=5)
-
-# Tiktok Username
-tiktok_username_label = tk.Label(token_frame, text="TikTok Username:")
-tiktok_username_label.pack(pady=5)
-
-tiktok_username_var = tk.StringVar()
-tiktok_username_entry = tk.Entry(token_frame, textvariable=tiktok_username_var, width=50, state=tk.DISABLED)
-tiktok_username_entry.pack(pady=5)
-
-# StreamLabs application status
-streamlabs_app_status_label = tk.Label(token_frame, text="StreamLabs Application Status:")
-streamlabs_app_status_label.pack(pady=5)
-
-streamlabs_app_status_var = tk.StringVar()
-streamlabs_app_status_entry = tk.Entry(token_frame, textvariable=streamlabs_app_status_var, width=50, state=tk.DISABLED)
-streamlabs_app_status_entry.pack(pady=5)
-
-# Can go live?
-can_go_live_label = tk.Label(token_frame, text="Can Go Live:")
-can_go_live_label.pack(pady=5)
-
-can_go_live_var = tk.StringVar()
-can_go_live_entry = tk.Entry(token_frame, textvariable=can_go_live_var, width=50, state=tk.DISABLED)
-can_go_live_entry.pack(pady=5)
-
-# Create a LabelFrame for stream details
-stream_frame = tk.LabelFrame(root, text="Stream Details", padx=10, pady=10)
-stream_frame.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
-
-# Create a label for stream title
-stream_title_label = tk.Label(stream_frame, text="Stream Title:")
-stream_title_label.pack(pady=5)
-
-# Create a text entry for stream title
-stream_title_entry = tk.Entry(stream_frame, width=50, state=tk.DISABLED)
-stream_title_entry.pack(pady=5)
-
-# Create a label for game category
-game_category_label = tk.Label(stream_frame, text="Game:")
-game_category_label.pack(pady=5)
-
-# Create a text entry for game category
-game_category_entry = tk.Entry(stream_frame, width=50, state=tk.DISABLED)
-game_category_entry.pack(pady=5)
-
-# Bind the key release event for auto-complete
-game_category_entry.bind('<KeyRelease>', on_keyrelease)
-
-# Create a listbox for suggestions
-listbox = tk.Listbox(stream_frame)
-listbox.pack_forget()
-listbox.bind("<<ListboxSelect>>", on_select)
-listbox.bind("<Motion>", on_motion)
-
-# Create a StringVar to hold the value for audience type
-audience_type_var = tk.StringVar(value='0')  # Default to '0' (everyone)
-
-# Create a checkbox for mature content
-audience_type_checkbox = tk.Checkbutton(
-    stream_frame,
-    text="Enable mature content",
-    variable=audience_type_var,
-    onvalue='1',  # Set to '1' when checked
-    offvalue='0',  # Set to '0' when unchecked
-    state=tk.DISABLED
-)
-audience_type_checkbox.pack(pady=5)
-
-# Create a LabelFrame for stream control buttons and info
-control_frame = tk.LabelFrame(root, text="Stream Control", padx=10, pady=10)
-control_frame.grid(row=0, column=1, rowspan=2, padx=10, pady=10, sticky='nsew')
-
-# Create "Go Live" and "End Live" buttons
-go_live_button = tk.Button(control_frame, text="Go Live", command=go_live, state=tk.DISABLED)
-go_live_button.pack(pady=5)
-
-end_live_button = tk.Button(control_frame, text="End Live", command=end_live, state=tk.DISABLED)
-end_live_button.pack(pady=5)
-
-# Create read-only text entries for stream URL and stream key with copy buttons
-stream_url_label = tk.Label(control_frame, text="Stream URL:")
-stream_url_label.pack(pady=5)
-
-stream_url_entry = tk.Entry(control_frame, width=50, state='readonly')
-stream_url_entry.pack(pady=5)
-
-copy_url_button = tk.Button(control_frame, text="Copy URL", command=lambda: copy_to_clipboard(stream_url_entry))
-copy_url_button.pack(pady=5)
-
-stream_key_label = tk.Label(control_frame, text="Stream Key:")
-stream_key_label.pack(pady=5)
-
-stream_key_entry = tk.Entry(control_frame, width=50, state='readonly')
-stream_key_entry.pack(pady=5)
-
-copy_key_button = tk.Button(control_frame, text="Copy Key", command=lambda: copy_to_clipboard(stream_key_entry))
-copy_key_button.pack(pady=5)
-
-save_config_button = tk.Button(root, text="Save Config", command=save_config)
-save_config_button.grid(row=2, column=0, padx=10, pady=10, columnspan=2, sticky='ew')
-
-# Create a "Help" button
-help_button = tk.Button(root, text="Help", command=show_help)
-help_button.grid(row=3, column=0, padx=10, pady=10, columnspan=2, sticky='ew')
-
-open_live_monitor_button = tk.Button(root, text="Open Live Monitor", command=lambda: webbrowser.open("https://livecenter.tiktok.com/live_monitor?lang=en-US"))
-open_live_monitor_button.grid(row=4, column=0, padx=10, pady=10, columnspan=2, sticky='ew')
-
-# Configure the grid weights for proper resizing behavior
-root.grid_columnconfigure(0, weight=1)
-root.grid_columnconfigure(1, weight=1)
-root.grid_rowconfigure(0, weight=1)
-root.grid_rowconfigure(1, weight=1)
-root.grid_rowconfigure(2, weight=1)
-root.grid_rowconfigure(3, weight=1)
-
-# Start the Tkinter event loop
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
-    stream = None
-    load_config()
-    root.mainloop()
+    app = QApplication(sys.argv)
+    window = StreamApp()
+    window.show()
+    sys.exit(app.exec())
