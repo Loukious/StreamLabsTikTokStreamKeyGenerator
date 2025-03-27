@@ -43,7 +43,7 @@ The script will output:
 ### I'm getting you `You can't open the application "***" because it may be damaged or incomplete` error on MacOS. What should I do?
 I don't own a Mac so I can't test the app on MacOS but you can try the following:
 1. Open Terminal.
-2. Run the following command: `xattr -dr com.apple.quarantine /path/to/the/app` (replace `/path/to/the/app` with the path to the app).
+2. Run the following command: `xattr -dr com.apple.quarantine /path/to/the/StreamLabsTikTokStreamKeyGenerator.app` (replace `/path/to/the/StreamLabsTikTokStreamKeyGenerator.app` with the path to the app).
 3. Try to run the app again.
 
 ### I'm getting a `Maximum number of attempts reached. Try again later.` error. What should I do?
