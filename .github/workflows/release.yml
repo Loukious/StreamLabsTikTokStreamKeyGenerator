@@ -34,7 +34,7 @@ jobs:
         build_type: [Release, Debug]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set Release variable
         run: |
@@ -48,10 +48,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install Nuitka clang
+          pip install clang
           if (Test-Path requirements.txt) {
             pip install -r requirements.txt
           }
+          "__version__ = '${{ github.event.inputs.version }}'" | Out-File -FilePath _version.py -Encoding utf8
 
       - name: Build Executable
         run: |
@@ -76,8 +77,13 @@ jobs:
             --prefer-source-code `
             --include-module=unittest `
             --windows-console-mode=disable `
-            --include-module=TokenRetriever `
             --plugin-enable=pyside6 `
+            --windows-company-name="Loukious" `
+            --windows-product-name="StreamLabs TikTok Stream Key Generator" `
+            --windows-file-version="${{ github.event.inputs.version }}" `
+            --windows-product-version="${{ github.event.inputs.version }}" `
+            --windows-file-description="StreamLabs TikTok Stream Key Generator" `
+            --copyright="Copyright © 2025 Loukious" `
             StreamLabsTikTokStreamKeyGenerator.py
           } else {
             nuitka `
@@ -98,20 +104,19 @@ jobs:
             --nofollow-import-to="test" `
             --prefer-source-code `
             --include-module=unittest `
-            --include-module=TokenRetriever `
             --plugin-enable=pyside6 `
             StreamLabsTikTokStreamKeyGenerator.py
           }
 
       - name: Compress Executable
-        run: Compress-Archive -Path StreamLabsTikTokStreamKeyGenerator.dist\* -DestinationPath StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-win.zip
+        run: Compress-Archive -Path StreamLabsTikTokStreamKeyGenerator.dist\* -DestinationPath StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-win-${{ github.event.inputs.version }}.zip
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-${{ matrix.build_type }}
           path: |
-            ./StreamLabsTikTokStreamKeyGenerator${{ matrix.build_type }}-win.zip
+            *.zip
 
   build_macos:
     runs-on: macos-latest
@@ -122,7 +127,7 @@ jobs:
         build_type: [Release]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python 3.13
         uses: actions/setup-python@v3
@@ -132,8 +137,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -U Nuitka clang certifi
+          pip install -U clang
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          echo "__version__ = '${{ github.event.inputs.version }}'" > _version.py
 
       - name: Build Executable
         run: |
@@ -151,19 +157,20 @@ jobs:
           --prefer-source-code \
           --macos-target-arch=${{ matrix.architecture }} \
           --macos-create-app-bundle \
-          --include-module=TokenRetriever \
+          --macos-app-version="${{ github.event.inputs.version }}" \
+          --macos-app-name="StreamLabs TikTok Stream Key Generator" \
           StreamLabsTikTokStreamKeyGenerator.py
 
       - name: Compress Executable
         run: |
-          zip -r StreamLabsTikTokStreamKeyGenerator-${{ matrix.architecture }}-macos.zip StreamLabsTikTokStreamKeyGenerator.app
+          zip -r StreamLabsTikTokStreamKeyGenerator-${{ matrix.architecture }}-macos-${{ github.event.inputs.version }}.zip StreamLabsTikTokStreamKeyGenerator.app
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.architecture }}
           path: |
-            StreamLabsTikTokStreamKeyGenerator-${{ matrix.architecture }}-macos.zip
+            *.zip
 
   build_linux:
     runs-on: ubuntu-22.04
@@ -173,15 +180,16 @@ jobs:
         build_type: [Release]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ccache python3-pip python3-tk zip python3-distutils
+          sudo apt-get install -y ccache python3-pip zip python3-distutils
           python3 -m pip install --upgrade pip
-          pip3 install -U Nuitka clang certifi
+          pip3 install -U clang
           if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
+          echo "__version__ = '${{ github.event.inputs.version }}'" > _version.py
 
       - name: Build Executable
         run: |
@@ -204,14 +212,14 @@ jobs:
           StreamLabsTikTokStreamKeyGenerator.py
 
       - name: Compress Executable
-        run: zip -r StreamLabsTikTokStreamKeyGenerator-linux.zip StreamLabsTikTokStreamKeyGenerator.dist/*
+        run: zip -r StreamLabsTikTokStreamKeyGenerator-linux-${{ github.event.inputs.version }}.zip StreamLabsTikTokStreamKeyGenerator.dist/*
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-
           path: |
-            ./StreamLabsTikTokStreamKeyGenerator-linux.zip
+            *.zip
 
   release:
     runs-on: ubuntu-latest
@@ -219,39 +227,18 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Download Windows artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: windows-*
-          merge-multiple: true
-          path: ./windows
-
-      - name: Download MacOS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: macos-*
-          merge-multiple: true
-          path: ./macos
-
-      - name: Download Linux artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: linux-*
-          merge-multiple: true
-          path: ./linux
+          path: artifacts/
 
       - name: Create the release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: "v${{ github.event.inputs.version }}"
           body: ${{ github.event.inputs.changelog }}
-          files: |
-            ./windows/StreamLabsTikTokStreamKeyGeneratorRelease-win.zip
-            ./windows/StreamLabsTikTokStreamKeyGeneratorDebug-win.zip
-            ./macos/StreamLabsTikTokStreamKeyGenerator-x86_64-macos.zip
-            ./macos/StreamLabsTikTokStreamKeyGenerator-arm64-macos.zip
-            ./linux/StreamLabsTikTokStreamKeyGenerator-linux.zip
+          files: "artifacts/**/*.zip"

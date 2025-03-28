@@ -12,9 +12,8 @@ from PySide6.QtCore import Signal, QTimer
 from PySide6.QtGui import QDesktopServices
 from Stream import Stream
 from TokenRetriever import TokenRetriever
-import ssl
-
-ssl._create_default_https_context = ssl._create_unverified_context
+from Updater import VersionChecker
+from packaging import version
 
 class StreamApp(QMainWindow):
     update_suggestions = Signal(list)
@@ -27,7 +26,10 @@ class StreamApp(QMainWindow):
         self.init_ui()
         self.load_config()
         
-        QTimer.singleShot(3000, self.show_donation_reminder)
+        QTimer.singleShot(3000, lambda: [
+            self.show_donation_reminder(),
+            QTimer.singleShot(3000, self.check_updates_on_startup)
+        ])
 
         # Connect signals
         self.update_suggestions.connect(self.update_suggestions_list)
@@ -280,23 +282,21 @@ class StreamApp(QMainWindow):
         try:
             with open("config.json", "r") as file:
                 data = json.load(file)
-                self.token_entry.setText(data.get("token", ""))
-                self.stream_title.setText(data.get("title", ""))
-                self.game_category.setText(data.get("game", ""))
-                self.mature_checkbox.setChecked(data.get("audience_type", "0") == "1")
-                self.suppress_donation_reminder = data.get("suppress_donation_reminder", False)
-
-                if self.token_entry.text():
-                    self.stream = Stream(self.token_entry.text())
-                    self.load_account_info()
-                    self.fetch_game_mask_id(self.game_category.text())
-
         except Exception as e:
-            self.suppress_donation_reminder = False
-            QMessageBox.warning(self, "Config Error", 
-                              "Error loading config: {}\nIgnore if first run.".format(str(e)))
+            data = {}
+        self.token_entry.setText(data.get("token", ""))
+        self.stream_title.setText(data.get("title", ""))
+        self.game_category.setText(data.get("game", ""))
+        self.mature_checkbox.setChecked(data.get("audience_type", "0") == "1")
+        self.suppress_donation_reminder = data.get("suppress_donation_reminder", False)
 
-    def save_config(self):
+        if self.token_entry.text():
+            self.stream = Stream(self.token_entry.text())
+            self.load_account_info()
+            self.fetch_game_mask_id(self.game_category.text())
+        self.save_config(False)
+
+    def save_config(self, show_message=True):
         data = {
             "title": self.stream_title.text(),
             "game": self.game_category.text(),
@@ -306,7 +306,8 @@ class StreamApp(QMainWindow):
         }
         with open("config.json", "w") as file:
             json.dump(data, file)
-        QMessageBox.information(self, "Config Saved", "Configuration saved successfully!")
+        if show_message:
+            QMessageBox.information(self, "Config Saved", "Configuration saved successfully!")
 
     def load_account_info(self):
         if self.stream:
@@ -475,6 +476,27 @@ class StreamApp(QMainWindow):
         msg.addButton(QMessageBox.Ok)
         msg.exec()
 
+
+    def check_updates_on_startup(self):
+        """Non-blocking update check with GUI notification"""
+        update_info = VersionChecker.check_update()
+
+        if update_info and version.parse(update_info["latest"]) > version.parse(update_info["current"]):
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Update Available")
+            msg.setText(
+                f"Version {update_info['latest']} is available!\n\n"
+                f"Current version: {update_info['current']}\n\n"
+                "Would you like to download it now?"
+            )
+            
+            # Use standard buttons for better compatibility
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg.setDefaultButton(QMessageBox.Yes)
+            
+            if msg.exec() == QMessageBox.Yes:
+                QDesktopServices.openUrl(update_info["url"])
+
     def show_donation_reminder(self):
         
         if self.suppress_donation_reminder:
@@ -500,7 +522,7 @@ class StreamApp(QMainWindow):
         
         if dont_show_again.isChecked():
             self.suppress_donation_reminder = True
-            self.save_config()
+            self.save_config(False)
         # Handle button clicks
         if msg.clickedButton() == donate_btn:
             QDesktopServices.openUrl("https://buymeacoffee.com/loukious")
