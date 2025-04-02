@@ -48,7 +48,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install clang
           if (Test-Path requirements.txt) {
             pip install -r requirements.txt
           }
@@ -137,7 +136,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -U clang
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           echo "__version__ = '${{ github.event.inputs.version }}'" > _version.py
 
@@ -187,7 +185,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ccache python3-pip zip python3-distutils
           python3 -m pip install --upgrade pip
-          pip3 install -U clang
           if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
           echo "__version__ = '${{ github.event.inputs.version }}'" > _version.py
 
