@@ -354,6 +354,8 @@ class StreamApp(QMainWindow):
         # Define the regex pattern to search for the apiToken
         token_pattern = re.compile(r'"apiToken":"([a-f0-9]+)"', re.IGNORECASE)
         
+        token = None
+        
         # Loop through files and search for the token pattern
         for file in files:
             try:
