@@ -377,7 +377,12 @@ class StreamApp(QMainWindow):
 
     def fetch_online_token(self):
         retriever = TokenRetriever()
-        token = retriever.retrieve_token()
+        try:
+            token = retriever.retrieve_token()
+        except Exception as e:
+            if "Chrome not found" in str(e):
+                QMessageBox.critical(self, "Error", "Google Chrome not found. Please install it to use this feature.")
+                return
         if token:
             self.token_entry.setText(token)
             self.stream = Stream(token)
