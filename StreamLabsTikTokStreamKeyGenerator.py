@@ -342,7 +342,8 @@ class StreamApp(QMainWindow):
         elif platform.system() == 'Darwin':  # macOS
             path_pattern = os.path.expanduser('~/Library/Application Support/slobs-client/Local Storage/leveldb/*.log')
         else:
-            return None
+            QMessageBox.critical(self, "Error", "Unsupported operating system for local token retrieval.")
+            return
 
         # Get all files matching the pattern
         files = glob.glob(path_pattern)
@@ -362,12 +363,17 @@ class StreamApp(QMainWindow):
                     if matches:
                         # Get the last occurrence of the token
                         token = matches[-1]
-                        return token
+                        break
             except Exception as e:
                 QMessageBox.critical("Error", f"Error reading file {file}: {e}")
-        
-        QMessageBox.information(self, "API Token", "No API Token found locally. A webpage will now open to allow you to login into your TikTok account.")
-        return None
+        if token:
+            self.token_entry.setText(token)
+            self.stream = Stream(token)
+            self.load_account_info()
+            self.fetch_game_mask_id(self.game_category.text())
+        else:
+            QMessageBox.critical(self, "Error", "No API Token found locally. Make sure Streamlabs is installed and you're logged in using TikTok.")
+
 
     def fetch_online_token(self):
         retriever = TokenRetriever()
