@@ -335,16 +335,6 @@ class StreamApp(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to load account info: {str(e)}")
 
-    def populate_token(self):
-        token = self.load_local_token()
-        if token:
-            self.token_entry.setText(token)
-            self.stream = Stream(token)
-            self.load_account_info()
-            self.fetch_game_mask_id(self.game_category.text())
-        else:
-            self.fetch_online_token()
-
     def load_local_token(self):
         # Determine the correct path based on the operating system
         if platform.system() == 'Windows':
