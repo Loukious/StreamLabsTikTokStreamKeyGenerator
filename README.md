@@ -39,6 +39,9 @@ The script will output:
 - **Base stream URL:** The URL needed to connect to the TikTok live stream.
 - **Stream key for OBS Studio (or any other streaming app):** Stream key that that you can use in OBS Studio to stream to TikTok.
 
+## Checkout my OBS-Multi-RTMP plugin fork!
+With [this](https://github.com/Loukious/obs-multi-rtmp) plugin, you can use your streamlabs token to stream directly to TikTok by saving it only once.
+
 ## FAQ
 ### I'm getting you `You can't open the application "***" because it may be damaged or incomplete` error on MacOS. What should I do?
 I don't own a Mac so I can't test the app on MacOS but you can try the following:
