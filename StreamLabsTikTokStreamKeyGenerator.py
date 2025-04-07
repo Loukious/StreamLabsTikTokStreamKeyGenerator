@@ -248,7 +248,7 @@ class StreamApp(QMainWindow):
         left_column.addLayout(bottom_buttons)
 
         self.save_btn = QPushButton("Save Config")
-        self.save_btn.clicked.connect(self.save_config)
+        self.save_btn.clicked.connect(lambda: self.save_config())
         bottom_buttons.addWidget(self.save_btn)
 
         self.help_btn = QPushButton("Help")
