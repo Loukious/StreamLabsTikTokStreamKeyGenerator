@@ -67,6 +67,7 @@ class StreamApp(QMainWindow):
         self.token_entry.setEchoMode(QLineEdit.Password)
         self.token_entry.setFixedHeight(28)
         self.token_entry.textChanged.connect(self.handle_token_change)
+        self.token_entry.returnPressed.connect(self.refresh_account_info)
         token_entry_row.addWidget(self.token_entry)
 
         # Eye icon for password visibility
@@ -139,6 +140,13 @@ class StreamApp(QMainWindow):
         live_row.addWidget(live_label)
         live_row.addWidget(self.can_go_live)
         token_layout.addLayout(live_row)
+        
+        # Refresh account info button
+        refresh_btn = QPushButton("Refresh Account Info")
+        refresh_btn.setFixedHeight(30)
+        refresh_btn.setToolTip("Refresh account information")
+        refresh_btn.clicked.connect(self.refresh_account_info)
+        token_layout.addWidget(refresh_btn)
 
         # Add stretch to prevent expansion
         token_layout.addStretch()
@@ -290,11 +298,7 @@ class StreamApp(QMainWindow):
         self.mature_checkbox.setChecked(data.get("audience_type", "0") == "1")
         self.suppress_donation_reminder = data.get("suppress_donation_reminder", False)
 
-        if self.token_entry.text():
-            self.stream = Stream(self.token_entry.text())
-            self.load_account_info()
-            self.fetch_game_mask_id(self.game_category.text())
-        self.save_config(False)
+        self.refresh_account_info()
 
     def save_config(self, show_message=True):
         data = {
@@ -334,6 +338,13 @@ class StreamApp(QMainWindow):
 
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to load account info: {str(e)}")
+    
+    def refresh_account_info(self):
+        if self.token_entry.text():
+            self.stream = Stream(self.token_entry.text())
+            self.load_account_info()
+            self.fetch_game_mask_id(self.game_category.text())
+        self.save_config(False)
 
     def load_local_token(self):
         # Determine the correct path based on the operating system
