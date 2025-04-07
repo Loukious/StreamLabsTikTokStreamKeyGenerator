@@ -31,6 +31,7 @@ class Stream:
             self.id = response["id"]
             return response["rtmp"], response["key"]
         except KeyError:
+            print("Error: ", response)
             return None, None
 
     def end(self):
