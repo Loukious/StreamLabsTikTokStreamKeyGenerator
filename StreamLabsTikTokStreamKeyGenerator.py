@@ -100,6 +100,20 @@ class StreamApp(QMainWindow):
 
         token_layout.addLayout(load_buttons_row)
 
+        # Binary Location Input Row
+        if platform.system() == "Linux":
+            binary_row = QHBoxLayout()
+            binary_row.setSpacing(5)
+
+            self.binary_location_entry = QLineEdit()
+            self.binary_location_entry.setPlaceholderText("Custom Chrome binary path (optional)")
+            self.binary_location_entry.setFixedHeight(28)
+            self.binary_location_entry.setToolTip("Leave empty to auto-detect Chrome path on Linux")
+            binary_row.addWidget(self.binary_location_entry)
+            
+            token_layout.addLayout(binary_row)
+
+
         # Account Info Section
         account_info_label = QLabel("Account Information")
         account_info_label.setStyleSheet("font-weight: bold; margin-top: 8px;")
@@ -390,8 +404,11 @@ class StreamApp(QMainWindow):
 
     def fetch_online_token(self):
         retriever = TokenRetriever()
+        binary_path = None
+        if hasattr(self, "binary_location_entry"):
+            binary_path = self.binary_location_entry.text().strip() or None
         try:
-            token = retriever.retrieve_token()
+            token = retriever.retrieve_token(binary_path)
         except Exception as e:
             if "Chrome not found" in str(e):
                 QMessageBox.critical(self, "Error", "Google Chrome not found. Please install it to use this feature.")

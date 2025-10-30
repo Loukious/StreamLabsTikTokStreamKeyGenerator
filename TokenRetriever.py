@@ -39,8 +39,8 @@ class TokenRetriever:
             for cookie in cookies:
                 driver.add_cookie(cookie)
 
-    def retrieve_token(self):
-        with SB(uc=True, headless=False) as sb:
+    def retrieve_token(self, binary_location=None):
+        with SB(uc=True, headless=False, binary_location=binary_location) as sb:
             sb.open("https://www.tiktok.com/transparency")
             self.load_cookies(sb)
 
