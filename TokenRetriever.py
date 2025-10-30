@@ -1,6 +1,6 @@
+import re
 import time
 from seleniumbase import SB
-from selenium.webdriver.support.ui import WebDriverWait
 import json
 import requests
 import hashlib
@@ -16,9 +16,9 @@ class TokenRetriever:
         self.code_verifier = self.generate_code_verifier()
         self.code_challenge = self.generate_code_challenge(self.code_verifier)
         self.streamlabs_auth_url = (
-            f"https://streamlabs.com/m/login?"
-            f"force_verify=1&external=mobile&skip_splash=1&tiktok"
-            f"&code_challenge={self.code_challenge}"
+            f"https://streamlabs.com/slobs/login?"
+            f"skip_splash=true&external=electron&tiktok=&force_verify=&origin=slobs"
+            f"&code_challenge={self.code_challenge}&code_flow=true"
         )
         self.cookies_file = cookies_file
         self.auth_code = None
@@ -40,51 +40,47 @@ class TokenRetriever:
                 driver.add_cookie(cookie)
 
     def retrieve_token(self, binary_location=None):
-        with SB(uc=True, headless=False, binary_location=binary_location) as sb:
+        code = ""
+
+        with SB(wire=True, headless=False, binary_location=binary_location) as sb:
             sb.open("https://www.tiktok.com/transparency")
             self.load_cookies(sb)
 
             sb.open(self.streamlabs_auth_url)
-
+            
             try:
-                wait = WebDriverWait(sb, 600)
-                wait.until(lambda sb: "success=true" in sb.get_current_url())
+                pattern = re.compile(r"^https://streamlabs\.com/tiktok/auth")
+                request = sb.driver.wait_for_request(pattern, timeout=600)
+                if request:
+                    code = request.response.headers.get("Location", "").split("code=")[-1]
             except:
-                print("Failed to authorize TikTok.")
-                return None
-        
-        params = {
-            'client_key': self.CLIENT_KEY,
-            'scope': 'user.info.basic,live.room.tag,live.room.info,live.room.manage,user.info.profile,user.info.stats',
-            'aid': '1459',
-            'redirect_uri': self.REDIRECT_URI,
-            'source': 'web',
-            'response_type': 'code'
-        }
-        with requests.Session() as s:
-            try:
-                time.sleep(5)
-                params= {
-                    "code_verifier": self.code_verifier
-                }
-                response = s.get(self.STREAMLABS_API_URL, params=params)
-                if response.status_code != 200:
-                    print(f"Bad response: {response.status_code} - {response.text}")
-                    return None
-                    
+                print("Timed out waiting for Streamlabs redirect.")
+        if code:
+            with requests.Session() as s:
                 try:
-                    resp_json = response.json()
-                except json.JSONDecodeError:
-                    print("Invalid JSON response. Status code:", response.status_code)
+                    time.sleep(5)
+                    params= {
+                        "code_verifier": self.code_verifier,
+                        "code": code
+                    }
+                    response = s.get(self.STREAMLABS_API_URL, params=params)
+                    if response.status_code != 200:
+                        print(f"Bad response: {response.status_code} - {response.text}")
+                        return None
+                        
+                    try:
+                        resp_json = response.json()
+                    except json.JSONDecodeError:
+                        print("Invalid JSON response. Status code:", response.status_code)
+                        return None
+                    if resp_json.get("success"):
+                        token = resp_json["data"].get("oauth_token")
+                        print(f"Got Streamlabs OAuth token: {token}")
+                        return token
+                    else:
+                        print("Streamlabs token request failed:", resp_json)
+                        return None
+                except Exception as e:
+                    print("Error requesting token from Streamlabs:", e)
                     return None
-                if resp_json.get("success"):
-                    token = resp_json["data"].get("oauth_token")
-                    print(f"Got Streamlabs OAuth token: {token}")
-                    return token
-                else:
-                    print("Streamlabs token request failed:", resp_json)
-                    return None
-            except Exception as e:
-                print("Error requesting token from Streamlabs:", e)
-                return None
         return None
