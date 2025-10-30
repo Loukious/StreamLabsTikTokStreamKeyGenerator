@@ -412,7 +412,10 @@ class StreamApp(QMainWindow):
         except Exception as e:
             if "Chrome not found" in str(e):
                 QMessageBox.critical(self, "Error", "Google Chrome not found. Please install it to use this feature.")
-                return
+            else:
+                QMessageBox.critical(self, "Error", f"Unexpected error: {e}")
+            return
+
         if token:
             self.token_entry.setText(token)
             self.stream = Stream(token)
