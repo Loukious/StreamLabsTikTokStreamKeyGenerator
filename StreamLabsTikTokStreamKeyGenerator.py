@@ -5,6 +5,7 @@ import re
 import sys
 import json
 import threading
+import traceback
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                               QGroupBox, QPushButton, QLineEdit, QLabel, QCheckBox,
                               QListWidget, QMessageBox, QListWidgetItem, QSizePolicy)
@@ -414,6 +415,7 @@ class StreamApp(QMainWindow):
                 QMessageBox.critical(self, "Error", "Google Chrome not found. Please install it to use this feature.")
             else:
                 QMessageBox.critical(self, "Error", f"Unexpected error: {e}")
+            print(traceback.format_exc())
             return
 
         if token:
