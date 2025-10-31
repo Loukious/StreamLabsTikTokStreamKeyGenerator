@@ -3,3 +3,4 @@ PySide6>=6.9.0
 requests>=2.32.3
 nuitka>=2.6.9
 clang>=20.1.0
+selenium-wire>=5.1.0

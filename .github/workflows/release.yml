@@ -75,6 +75,9 @@ jobs:
             --nofollow-import-to="test" `
             --prefer-source-code `
             --include-module=unittest `
+            --include-module=seleniumwire `
+            --include-module=blinker._saferef `
+            --include-package-data=seleniumwire `
             --windows-console-mode=disable `
             --plugin-enable=pyside6 `
             --windows-company-name="Loukious" `
@@ -103,6 +106,9 @@ jobs:
             --nofollow-import-to="test" `
             --prefer-source-code `
             --include-module=unittest `
+            --include-module=seleniumwire `
+            --include-module=blinker._saferef `
+            --include-package-data=seleniumwire `
             --plugin-enable=pyside6 `
             StreamLabsTikTokStreamKeyGenerator.py
           }
@@ -152,6 +158,9 @@ jobs:
           --enable-plugin=anti-bloat \
           --enable-plugin=pyside6 \
           --include-package=certifi \
+          --include-module=seleniumwire \
+          --include-module=blinker._saferef \
+          --include-package-data=seleniumwire \
           --prefer-source-code \
           --macos-target-arch=${{ matrix.architecture }} \
           --macos-create-app-bundle \
@@ -200,6 +209,9 @@ jobs:
           --standalone \
           --enable-plugin=anti-bloat \
           --enable-plugin=pyside6 \
+          --include-module=seleniumwire \
+          --include-module=blinker._saferef \
+          --include-package-data=seleniumwire \
           --include-package=certifi \
           --show-modules \
           --show-anti-bloat-changes \
