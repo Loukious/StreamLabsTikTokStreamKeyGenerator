@@ -305,7 +305,7 @@ class StreamApp(QMainWindow):
         try:
             with open("config.json", "r") as file:
                 data = json.load(file)
-        except Exception as e:
+        except:
             data = {}
         self.token_entry.setText(data.get("token", ""))
         self.stream_title.setText(data.get("title", ""))
