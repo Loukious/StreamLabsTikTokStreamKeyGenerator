@@ -23,11 +23,25 @@ This application is a simple tool that generates a TikTok Live Stream Key for OB
 3. 
     1. If you have Streamlabs installed on your computer and you are logged in with your TikTok account in Streamlabs, the application will automatically load the token.
     2. If you don't have Streamlabs installed on your computer or you are not logged in with your TikTok account in Streamlabs, you will need to login with your TikTok account in the browser that will open.
+    3. If automatic login fails (common on Linux), you must manually export your TikTok cookies (see below) and then click "Load from Web".
 
 4. Select stream title and category.
 5. Click on "Save Config" button to save the token, title and category.
 6. Click on the "Go Live" button.
 
+## Manual Cookie Export (Required if automatic login fails)
+
+If the token cannot be loaded automatically (for example, due to Selenium detection, cookie loading issues, or request timeouts), follow these steps:
+
+Install a browser extension that allows exporting cookies in JSON format, such as **mentioned in FAQ**
+
+1. Open TikTok in your browser and log in.
+2. While on tiktok.com, export your cookies using the extension.
+3. Save the exported file as cookies.json.
+4. Place cookies.json in the same directory as the application.
+5. Launch the app and click "Load from Web".
+
+With manually exported cookies, the application can successfully authenticate with Streamlabs and retrieve the token.
 
 ## Screenshots
 
@@ -56,3 +70,6 @@ This error sometimes occurs when TikTok detects selenium. You can use this [exte
 3. After that, place the file in the same directory as the script and rename it to `cookies.json` then start the app.
 ### Do I need to have 1k followers to get Streamlabs TikTok LIVE access?
 No, you can request access even if you have less than 1k followers.
+
+### The app cannot retrieve the token and times out. What should I do?
+This is typically caused by cookies not being properly loaded automatically. Use the manual cookie export method described above and then click **"Load from Web"**.
