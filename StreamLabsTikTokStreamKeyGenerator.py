@@ -450,7 +450,7 @@ class StreamApp(QMainWindow):
                 self._restore_online_btn.emit()
 
             if token:
-                self._restore_online_btn.emit(token)
+                self._token_ready.emit(token)
             else:
                 self._token_error.emit("Failed to obtain token online!")
 
