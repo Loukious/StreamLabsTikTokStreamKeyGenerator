@@ -19,7 +19,11 @@ from packaging import version
 class StreamApp(QMainWindow):
     update_suggestions = Signal(list)
     update_ui = Signal()
-    
+    _token_ready = Signal(str)
+    _token_error = Signal(str)
+    _restore_local_btn = Signal()
+    _restore_online_btn = Signal()
+
     def __init__(self):
         super().__init__()
         self.stream = None
@@ -35,6 +39,10 @@ class StreamApp(QMainWindow):
         # Connect signals
         self.update_suggestions.connect(self.update_suggestions_list)
         self.update_ui.connect(self.handle_ui_update)
+        self._token_ready.connect(self._apply_token)
+        self._token_error.connect(lambda msg: QMessageBox.critical(self, "Error", msg))
+        self._restore_local_btn.connect(self._do_restore_local_btn)
+        self._restore_online_btn.connect(self._do_restore_online_btn)
 
     def init_ui(self):
         self.setWindowTitle("StreamLabs TikTok Stream Key Generator")
@@ -361,70 +369,99 @@ class StreamApp(QMainWindow):
             self.fetch_game_mask_id(self.game_category.text())
         self.save_config(False)
 
-    def load_local_token(self):
-        # Determine the correct path based on the operating system
-        if platform.system() == 'Windows':
-            path_pattern = os.path.expandvars(r'%appdata%\slobs-client\Local Storage\leveldb\*.log')
-        elif platform.system() == 'Darwin':  # macOS
-            path_pattern = os.path.expanduser('~/Library/Application Support/slobs-client/Local Storage/leveldb/*.log')
-        else:
-            QMessageBox.critical(self, "Error", "Unsupported operating system for local token retrieval.")
-            return
+    def _do_restore_local_btn(self):
+        self.load_local_btn.setEnabled(True)
+        self.load_local_btn.setText("Load from PC")
 
-        # Get all files matching the pattern
-        files = glob.glob(path_pattern)
-        
-        # Sort files by date modified, newest first
-        files.sort(key=os.path.getmtime, reverse=True)
-        
-        # Define the regex pattern to search for the apiToken
+    def _do_restore_online_btn(self):
+        self.load_online_btn.setEnabled(True)
+        self.load_online_btn.setText("Load from Web")
+
+    def load_local_token(self):
+        self.load_local_btn.setEnabled(False)
+        self.load_local_btn.setText("Searching…")
+
+        def _run():
+            try:
+                token = self._find_local_token()
+            except Exception as e:
+                print(traceback.format_exc())
+                self._token_error.emit(f"Unexpected error: {e}")
+                return
+            finally:
+                self._restore_local_btn.emit()
+
+            if token:
+                self._token_ready.emit(token)
+            else:
+                self._token_error.emit(
+                    "No API Token found locally. Make sure Streamlabs is installed "
+                    "and you're logged in using TikTok."
+                )
+
+        threading.Thread(target=_run, daemon=True).start()
+
+    def _find_local_token(self) -> str | None:
+        """Blocking file scan — runs on a worker thread."""
+        if platform.system() == 'Windows':
+            path_pattern = os.path.expandvars(
+                r'%appdata%\slobs-client\Local Storage\leveldb\*.log'
+            )
+        elif platform.system() == 'Darwin':
+            path_pattern = os.path.expanduser(
+                '~/Library/Application Support/slobs-client/Local Storage/leveldb/*.log'
+            )
+        else:
+            QTimer.singleShot(0, lambda: QMessageBox.critical(
+                self, "Error", "Unsupported operating system for local token retrieval."
+            ))
+            return None
+
+        files = sorted(glob.glob(path_pattern), key=os.path.getmtime, reverse=True)
         token_pattern = re.compile(r'"apiToken":"([a-f0-9]+)"', re.IGNORECASE)
-        
-        token = None
-        
-        # Loop through files and search for the token pattern
+
         for file in files:
             try:
-                with open(file, 'r', encoding='utf-8', errors='ignore') as f:
-                    content = f.read()
-                    matches = token_pattern.findall(content)
-                    if matches:
-                        # Get the last occurrence of the token
-                        token = matches[-1]
-                        break
+                with open(file, 'rb') as f:
+                    content = f.read().decode('utf-8', errors='ignore')
+                content = re.sub(r'[\x00]', '', content)
+                matches = token_pattern.findall(content)
+                if matches:
+                    return matches[-1]
             except Exception as e:
-                QMessageBox.critical("Error", f"Error reading file {file}: {e}")
-        if token:
-            self.token_entry.setText(token)
-            self.stream = Stream(token)
-            self.load_account_info()
-            self.fetch_game_mask_id(self.game_category.text())
-        else:
-            QMessageBox.critical(self, "Error", "No API Token found locally. Make sure Streamlabs is installed and you're logged in using TikTok.")
+                print(f"Error reading {file}: {e}")
 
+        return None
 
     def fetch_online_token(self):
-        retriever = TokenRetriever()
-        binary_path = None
-        if hasattr(self, "binary_location_entry"):
-            binary_path = self.binary_location_entry.text().strip() or None
-        try:
-            token = retriever.retrieve_token(binary_path)
-        except Exception as e:
-            if "Chrome not found" in str(e):
-                QMessageBox.critical(self, "Error", "Google Chrome not found. Please install it to use this feature.")
-            else:
-                QMessageBox.critical(self, "Error", f"Unexpected error: {e}")
-            print(traceback.format_exc())
-            return
+        self.load_online_btn.setEnabled(False)
+        self.load_online_btn.setText("Waiting for login…")
 
-        if token:
-            self.token_entry.setText(token)
-            self.stream = Stream(token)
-            self.load_account_info()
-            self.fetch_game_mask_id(self.game_category.text())
-        else:
-            QMessageBox.critical(self, "Error", "Failed to obtain token online!")
+        retriever = TokenRetriever()
+
+        def _run():
+            try:
+                token = retriever.retrieve_token()
+            except Exception as e:
+                print(traceback.format_exc())
+                self._token_error.emit(f"Unexpected error: {e}")
+                return
+            finally:
+                self._restore_online_btn.emit()
+
+            if token:
+                self._restore_online_btn.emit(token)
+            else:
+                self._token_error.emit("Failed to obtain token online!")
+
+        threading.Thread(target=_run, daemon=True).start()
+
+    def _apply_token(self, token: str):
+        """Apply a freshly retrieved token — always called on the GUI thread."""
+        self.token_entry.setText(token)
+        self.stream = Stream(token)
+        self.load_account_info()
+        self.fetch_game_mask_id(self.game_category.text())
 
     def fetch_game_mask_id(self, game_name):
         if self.stream:
