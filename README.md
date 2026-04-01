@@ -19,24 +19,20 @@ This application is a simple tool that generates a TikTok Live Stream Key for OB
 
 ## Usage
 1. Run the application.
-2. click on the "Load token" button.
-3. 
-    1. If you have Streamlabs installed on your computer and you are logged in with your TikTok account in Streamlabs, the application will automatically load the token.
-    2. If you don't have Streamlabs installed on your computer or you are not logged in with your TikTok account in Streamlabs, you will need to login with your TikTok account in the browser that will open.
-
-4. Select stream title and category.
-5. Click on "Save Config" button to save the token, title and category.
-6. Click on the "Go Live" button.
+2. click on the "Load from PC" button if you have Streamlabs installed on your computer and you are logged in with your TikTok account in Streamlabs, otherwise click on the "Login from Web" button.
+3. Select stream title and category.
+4. Click on "Save Config" button to save the token, title and category.
+5. Click on the "Go Live" button.
 
 
 ## Screenshots
 
-![Screenshot](https://i.imgur.com/XLroKB2.png)
+![Screenshot](https://i.imgur.com/2PSgEQP.png)
 
 ## Output
 
-The script will output:
-- **Base stream URL:** The URL needed to connect to the TikTok live stream.
+The app will output:
+- **Stream URL:** The URL needed to connect to the TikTok live stream.
 - **Stream key for OBS Studio (or any other streaming app):** Stream key that that you can use in OBS Studio to stream to TikTok.
 
 ## Checkout my OBS-Multi-RTMP plugin fork!
@@ -49,10 +45,8 @@ I don't own a Mac so I can't test the app on MacOS but you can try the following
 2. Run the following command: `xattr -dr com.apple.quarantine /path/to/the/StreamLabsTikTokStreamKeyGenerator.app` (replace `/path/to/the/StreamLabsTikTokStreamKeyGenerator.app` with the path to the app).
 3. Try to run the app again.
 
-### I'm getting a `Maximum number of attempts reached. Try again later.` error. What should I do?
-This error sometimes occurs when TikTok detects selenium. You can use this [extension](https://chromewebstore.google.com/detail/export-cookie-json-file-f/nmckokihipjgplolmcmjakknndddifde) to export your cookies and import them into the script.
-1. Start by installing the above extension in your browser.
-2. Log into TikTok in the browser (if not already logged in), then export the cookies using the extension (while being on TikTok's website). 
-3. After that, place the file in the same directory as the script and rename it to `cookies.json` then start the app.
+### I'm getting an error when I try to stream. What should I do?
+1. First make sure it's not an issue related to Streamlabs. Try going live using Streamlabs and see if you get the same error.
+2. If it's not an issue related to Streamlabs, you can create an issue on GitHub with the error message and a screenshot of the error.
 ### Do I need to have 1k followers to get Streamlabs TikTok LIVE access?
 No, you can request access even if you have less than 1k followers.
