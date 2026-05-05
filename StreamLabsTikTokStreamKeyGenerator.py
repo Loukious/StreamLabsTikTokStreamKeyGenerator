@@ -97,6 +97,9 @@ class StreamApp(QMainWindow):
         self.load_local_btn = QPushButton("Load from PC")
         self.load_local_btn.setFixedHeight(30)
         self.load_local_btn.setToolTip("Load token from Streamlabs desktop app data")
+        if platform.system() == "Linux":
+            self.load_local_btn.setEnabled(False)
+            self.load_local_btn.setToolTip("Streamlabs Desktop is not supported on Linux")
         self.load_local_btn.clicked.connect(self.load_local_token)
         load_buttons_row.addWidget(self.load_local_btn)
 
@@ -108,20 +111,6 @@ class StreamApp(QMainWindow):
         load_buttons_row.addWidget(self.load_online_btn)
 
         token_layout.addLayout(load_buttons_row)
-
-        # Binary Location Input Row
-        if platform.system() == "Linux":
-            binary_row = QHBoxLayout()
-            binary_row.setSpacing(5)
-
-            self.binary_location_entry = QLineEdit()
-            self.binary_location_entry.setPlaceholderText("Custom Chrome binary path (optional)")
-            self.binary_location_entry.setFixedHeight(28)
-            self.binary_location_entry.setToolTip("Leave empty to auto-detect Chrome path on Linux")
-            binary_row.addWidget(self.binary_location_entry)
-            
-            token_layout.addLayout(binary_row)
-
 
         # Account Info Section
         account_info_label = QLabel("Account Information")

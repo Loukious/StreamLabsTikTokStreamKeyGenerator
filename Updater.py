@@ -1,4 +1,7 @@
-from _version import __version__
+try:
+    from _version import __version__
+except ImportError:
+    __version__ = "dev"
 from packaging import version
 import requests
 
