@@ -3,6 +3,20 @@
 ## Description
 This application is a simple tool that generates a TikTok Live Stream Key for OBS Studio using the Streamlabs API. Streamlabs TikTok LIVE access is required.
 
+## Stream to TikTok directly from OBS
+
+**[Loukious's TikTok extension for OBS-Multi-RTMP](https://github.com/Loukious/obs-multi-rtmp)** lets you manage TikTok streaming inside OBS. Save your Streamlabs token once, or import it from Streamlabs Desktop, then start your LIVE through OBS's normal streaming controls or the **Multiple output** dock.
+
+- **Automatic Streamlabs setup:** the plugin obtains the streaming server and key when you start, with account eligibility feedback and searchable categories.
+- **Native LIVE Studio and Android connections:** choose desktop, Camera LIVE, or mobile gaming, with room creation, signing, and stream metadata handled inside OBS.
+- **QR login:** sign in with your phone, renew expired codes automatically, and save account-named `cookies_<username>.json` files.
+- **Portrait + landscape:** eligible LIVE Studio and Android Camera LIVE accounts can stream dual layouts with independent scenes, resolutions, encoders, and audio settings.
+- **OBS 33 support:** the Windows installer uses the new plugin layout and cleans up legacy copies while preserving other plugins and user settings.
+
+**[Download the OBS plugin](https://github.com/Loukious/obs-multi-rtmp/releases/latest)** · **[Setup and requirements](https://github.com/Loukious/obs-multi-rtmp#readme)**
+
+Requires OBS **32.2.1 or newer**. On Windows, use **Installer.exe** or the standard ZIP for OBS **33+**, and **OBS32.zip** for OBS **32.2.1**. Streamlabs connections require Streamlabs TikTok LIVE access. Native LIVE Studio/Android connections require the [RapidAPI signer](https://rapidapi.com/Loukious/api/tiktok-live-studio-api-signer1); dual layout also requires account eligibility.
+
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/loukious)
 
 
@@ -34,9 +48,6 @@ This application is a simple tool that generates a TikTok Live Stream Key for OB
 The app will output:
 - **Stream URL:** The URL needed to connect to the TikTok live stream.
 - **Stream key for OBS Studio (or any other streaming app):** Stream key that that you can use in OBS Studio to stream to TikTok.
-
-## Checkout my OBS-Multi-RTMP plugin fork!
-With [this](https://github.com/Loukious/obs-multi-rtmp) plugin, you can use your streamlabs token to stream directly to TikTok by saving it only once.
 
 ## FAQ
 ### I'm getting you `You can't open the application "***" because it may be damaged or incomplete` error on MacOS. What should I do?
